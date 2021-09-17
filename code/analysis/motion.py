@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*- 
 
 """
-    Motion Detector
+    Motion Analysis
 """
 import asyncio
 import cv2
@@ -14,12 +14,12 @@ import time
 import math
 import base64
 
-import motionutils
+from analysis import motionutils
 
 
-class MotionDetector():
+class Motion():
     """
-        Motion Detector
+        Motion Analysis
     """
 
     #def __init__(self, degree = 10, points = None, msger = None, hotmapReturnMode = 0):

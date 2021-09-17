@@ -5,8 +5,10 @@ import asyncio
 import json
 import uuid
 import websockets
+import os
+
 from messager import WSMessager
-from motiondetector import MotionDetector
+from analysis import motion
 
 
 async def addTask(taskBody, websocket):
@@ -23,8 +25,8 @@ async def addTask(taskBody, websocket):
 
 
                 messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionDetector = MotionDetector(msger = messager)
-                await motionDetector.motionDetect4Video(dic['source'])
+                motionAnalysis = motion.Motion(msger = messager)
+                await motionAnalysis.motionDetect4Video(dic['source'])
 
             elif (dic['type'] == 1):
                 print('compare video')
