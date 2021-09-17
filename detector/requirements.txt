@@ -1,0 +1,4 @@
+numpy==1.21.2
+opencv_python==4.5.3.56
+websockets==10.0
+matplotlib==3.3.2
