@@ -31,7 +31,7 @@ class Motion():
             degree : int, optional
                         Threshold of image similarity
                         Default value is 10
-            points : array_like, optional
+            regions : array_like, optional
                         Vertex coordinates of the detection area
                         Default value is None
             msger : Messager, optional
@@ -47,7 +47,7 @@ class Motion():
             Returns
             -------
         """
-        self.points = kwargs.get('points')
+        self.regions = kwargs.get('regions')
         self.degree = kwargs.get('degree', 10)
         # 对图像进行二值化处理所需要的一些阈值
         self.threshold = 2
@@ -62,9 +62,91 @@ class Motion():
         self.hotmapDir = 'hotmap'
 
 
+    async def motionDetect(self, sources, sourceType):
+        """
+            Motion detection
+
+            Parameters
+            ----------
+            sources : array_like
+                        The video or image files to be detected
+            sourceType : int
+                        The source type
+                        1: video
+                        2: images
+                    
+            Returns
+            -------
+            source : string, optional
+                        The source name
+            degree : int, optional
+                        The value of similarity
+            motionIndex : int, optional
+                        The time or index of the motion
+            hotmapImg : string, optional
+                        hot map image
+
+        """
+
+        # 参数检查
+        if sources is None:
+            print(f'Invalid sources value')
+            return
+        if sourceType is None or sourceType not in [1, 2]:
+            print(f'Invalid sourceType value, valid sourceType values are [1, 2]')
+            return
+
+        # 视频方式
+        if sourceType == 1:
+            await self.motionDetect4Videos(sources)
+        # 图片方式
+        elif sourceType == 2:
+            await self.motionDetect4Images(sources)
+        else:
+            print(f'Invalid sourceType value and the valid sourceType values are [1, 2]')
+            return
+
+
+    async def motionDetect4Videos(self, videoFiles):
+        """
+            Motion detection based on videos file
+
+            Parameters
+            ----------
+            videoFiles : array_like
+                        The video files to be detected
+                    
+            Returns
+            -------
+            source : string, optional
+                        The source name
+            degree : int, optional
+                        The value of similarity
+            motionIndex : int, optional
+                        The time or index of the motion
+            hotmapImg : string, optional
+                        hot map image
+        """
+
+        # 参数检查
+        if videoFiles is None:
+             print(f'Invalid videoFiles value')
+             return
+
+        # 遍历进行处理
+        for videoFile in videoFiles:
+            # 检查视频路径是否真实存在
+            if (videoFile is None) or (not os.path.exists(videoFile)):
+                print(f'The video file({videoFile}) does not exist')
+                continue
+
+            # 进行视频检测
+            await self.motionDetect4Video(videoFile)
+
+  
     async def motionDetect4Video(self, videoFile):
         """
-            Motion detection based on video
+            Motion detection based on video file
 
             Parameters
             ----------
@@ -73,6 +155,14 @@ class Motion():
                     
             Returns
             -------
+            source : string, optional
+                        The source name
+            degree : int, optional
+                        The value of similarity
+            motionIndex : int, optional
+                        The time or index of the motion
+            hotmapImg : string, optional
+                        hot map image
         """
 
         # 参数检查
@@ -122,7 +212,7 @@ class Motion():
             # 获取背景剪裁器
             backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
             # 没有指定检测区域，则默认检测整个图像区域
-            if self.points is None:
+            if self.regions is None:
                 accumulatedImage = np.zeros((height, width), np.uint8)
 
 
@@ -138,9 +228,9 @@ class Motion():
             if currentFrame is None:
                 continue
 
-            if self.points is not None:
+            if self.regions is not None:
                 # 裁剪图片
-                currentFrame = motionutils.getROI(currentFrame, self.points)
+                currentFrame = motionutils.getROI(currentFrame, self.regions)
 
 
             # 生成hotmap
@@ -180,7 +270,7 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    await self.msger.send({'timestamp': milliseconds, 'degree' : degree})
+                    await self.msger.send({'source' : videoFile, 'motionIndex': milliseconds, 'degree' : degree})
 
             # 设置上一帧
             lastFrame = copy.deepcopy(currentFrame)
@@ -198,8 +288,8 @@ class Motion():
             # 将255改变成0
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
 
-            # points不为空，则进行重新resize
-            if self.points is not None and pngImage.shape[0:2] != (width, height):
+            # regions不为空，则进行重新resize
+            if self.regions is not None and pngImage.shape[0:2] != (width, height):
                 pngImage = cv2.resize(pngImage, (width, height))
 
             # 根据指定返回hot map的方式进行处理
@@ -221,7 +311,7 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            await self.msger.end({'hotmapImg': hotmapImg})
+            await self.msger.end({'source' : videoFile, 'hotmapImg': hotmapImg})
 
 
     async def motionDetect4Images(self, imageFiles):
@@ -235,6 +325,14 @@ class Motion():
                     
             Returns
             -------
+            source : string, optional
+                        The source name
+            degree : int, optional
+                        The value of similarity
+            motionIndex : int, optional
+                        The time or index of the motion
+            hotmapImg : string, optional
+                        hot map image
         """
 
         # 参数检查
@@ -267,7 +365,9 @@ class Motion():
         motionFiles = []
 
         # 遍历进行处理
-        for imageFile in imageFiles:
+        for i in range(0, len(imageFiles)):
+            # 图片路径
+            imageFile = imageFiles[i]
             # 检查图片是否真实存在
             if (imageFile is None) or (not os.path.exists(imageFile)):
                 print(f'The image file({imageFile}) does not exist')
@@ -281,9 +381,9 @@ class Motion():
             originalWidth = width
 
             # 没有指定检测区域，则默认检测整个图像区域
-            if self.points is not None:
+            if self.regions is not None:
                 # 裁剪图片
-                currentImage = motionutils.getROI(currentImage, self.points)
+                currentImage = motionutils.getROI(currentImage, self.regions)
                 height, width = currentImage.shape[0:2]
 
             # 生成hotmap
@@ -326,7 +426,7 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    await self.msger.send({'imageFile': imageFile, 'degree' : degree})
+                    await self.msger.send({'source': imageFile,  'motionIndex': i, 'degree' : degree})
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
@@ -343,8 +443,8 @@ class Motion():
             # 将255改变成0
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
 
-            # points不为空，则进行重新resize
-            if self.points is not None and pngImage.shape[0:2] != (originalWidth, originalHeight):
+            # regions不为空，则进行重新resize
+            if self.regions is not None and pngImage.shape[0:2] != (originalWidth, originalHeight):
                 pngImage = cv2.resize(pngImage, (originalWidth, originalHeight))
 
             # 根据指定返回hot map的方式进行处理
@@ -376,7 +476,7 @@ if __name__ == '__main__':
 
 
     # 测试参数
-    points = [
+    regions = [
         [
             89.1232876712329,
             117.1232876123287
@@ -400,7 +500,7 @@ if __name__ == '__main__':
               'D:\\projects\\self\\python\\data_images\\testL0.png']
 
     # 构造对象
-    motionDetector = MotionDetector(degree = degree, points = points, hotmap = 1)
+    motionDetector = MotionDetector(degree = degree, regions = regions, hotmap = 1)
     motionDetector.motionDetect4Video(videoFile)
     #motionDetector.motionDetect4Images(images)
 

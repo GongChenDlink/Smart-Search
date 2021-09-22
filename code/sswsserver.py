@@ -25,8 +25,13 @@ async def addTask(taskBody, websocket):
 
 
                 messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'])
-                await motionAnalysis.motionDetect4Video(dic['source'])
+                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'])
+
+                await motionAnalysis.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
+
+                #await motionAnalysis.motionDetect4Video(dic['source'])
+
+                #await motionAnalysis.motionDetect4Images(dic['source'])
 
             elif (dic['type'] == 1):
                 print('compare video')
