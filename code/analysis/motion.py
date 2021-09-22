@@ -263,8 +263,8 @@ class Motion():
         originalHeight = None
         originalWidth = None
 
-        # motion发生的时刻
-        motionTimes = []
+        # 发生motion的图片
+        motionFiles = []
 
         # 遍历进行处理
         for imageFile in imageFiles:
@@ -322,8 +322,7 @@ class Motion():
 
             # 大于指定阈值
             if degree > self.degree:
-                milliseconds = capture.get(cv2.CAP_PROP_POS_MSEC)
-                motionTimes.append(milliseconds)
+                motionFiles.append(imageFile)
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
