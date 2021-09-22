@@ -327,7 +327,7 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    await self.msger.send({'timestamp': milliseconds, 'degree' : degree})
+                    await self.msger.send({'imageFile': imageFile, 'degree' : degree})
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
