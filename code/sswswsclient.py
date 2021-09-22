@@ -11,7 +11,7 @@ async def hello():
     uri = "ws://localhost:7000/add"
     async with websockets.connect(uri) as websocket:
 
-        params = {'type': 0, 'source' : 'E:\资料\临时文件\D-Link\Projects\DNH200\SmartSearch\CH05.mp4', 'region': None}
+        params = {'type': 0, 'source' : 'E:\资料\临时文件\D-Link\Projects\DNH200\SmartSearch\CH05.mp4', 'region': None, 'hotmap': 1}
 
         await websocket.send(json.dumps(params))
 

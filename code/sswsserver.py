@@ -25,7 +25,7 @@ async def addTask(taskBody, websocket):
 
 
                 messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionAnalysis = motion.Motion(msger = messager)
+                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'])
                 await motionAnalysis.motionDetect4Video(dic['source'])
 
             elif (dic['type'] == 1):
