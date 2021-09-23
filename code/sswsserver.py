@@ -8,7 +8,7 @@ import websockets
 import os
 
 from messager import WSMessager
-from analysis import motion
+from detection import motion
 
 
 async def addTask(taskBody, websocket):
