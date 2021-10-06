@@ -25,7 +25,7 @@ async def addTask(taskBody, websocket):
 
 
                 messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'])
+                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
 
                 await motionAnalysis.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
 
@@ -38,9 +38,10 @@ async def addTask(taskBody, websocket):
                 #await websocket.send(json.dumps({'status': 'added', 'taskId': taskId}))
                 #await compare.frameCmp(dic['source'], dic['threshold'], dic['region'], taskId, websocket)
 
-                messger = WSMessager(taskId, websocket)
-                motionDetector = MotionDetector(messager = messager)
-                motionDetector.motionDetect4Video(dic['source'], dic['region'])
+                messager = WSMessager(taskId="sssssssssss", msger=websocket)
+                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
+
+                await motionAnalysis.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
 
             else:
                 print('None')

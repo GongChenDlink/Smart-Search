@@ -88,11 +88,11 @@ class WSMessager(Messager):
         msg['taskId'] = self.taskId
         msg['status'] = 'process'
         await self.msger.send(json.dumps(msg))
-        await asyncio.sleep(10)
+        await asyncio.sleep(0.01)
 
 
     async def end(self, msg):
         msg['taskId'] = self.taskId
         msg['status'] = 'finish'
         await self.msger.send(json.dumps(msg))
-        await asyncio.sleep(10)
+        await asyncio.sleep(0.01)

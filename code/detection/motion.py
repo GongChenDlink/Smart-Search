@@ -423,7 +423,7 @@ class Motion():
             # 大于指定阈值
             if degree > self.degree:
                 motionFiles.append(imageFile)
-                print('Changed: ', milliseconds, ' degree: ', degree)
+                #print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
                     await self.msger.send({'source': imageFile,  'motionIndex': i, 'degree' : degree})
