@@ -8,7 +8,7 @@ import websockets
 import os
 
 from messager import WSMessager
-from detection import motion
+from detection.motion import motion
 
 
 async def addTask(taskBody, websocket):
@@ -25,9 +25,9 @@ async def addTask(taskBody, websocket):
 
 
                 messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
+                motionDetector = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
 
-                await motionAnalysis.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
+                await motionDetector.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
 
                 #await motionAnalysis.motionDetect4Video(dic['source'])
 

@@ -14,7 +14,7 @@ import time
 import math
 import base64
 
-from detection import motionutils
+from detection.motion import motionutils
 
 
 class Motion():
