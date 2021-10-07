@@ -83,13 +83,11 @@ class WSMessager(Messager):
         """
         super(WSMessager, self).__init__(**kwargs)
 
-
     async def send(self, msg):
         msg['taskId'] = self.taskId
         msg['status'] = 'process'
         await self.msger.send(json.dumps(msg))
         await asyncio.sleep(0.01)
-
 
     async def end(self, msg):
         msg['taskId'] = self.taskId

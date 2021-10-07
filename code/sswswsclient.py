@@ -7,10 +7,10 @@ import asyncio
 import websockets
 import json
 
+
 async def hello():
     uri = "ws://localhost:7000/add"
     async with websockets.connect(uri) as websocket:
-
         regions = [
             [
                 89.1232876712329,
@@ -26,16 +26,27 @@ async def hello():
             ]
         ]
 
-        params = {'type': 0, 'sources' : ['E:\资料\临时文件\D-Link\Projects\DNH200\SmartSearch\CH05.mp4'], 'regions': regions, 'hotmap': 1, 'sourceType': 1}
+        # params = {'sourceType': 1, 'sources': ['./samples/CH05.mp4'], 'regions': regions, 'degree': 1,
+        #           'hotmap': 1}
 
-        #params = {'type': 0, 'sources' : ['D:\\projects\\self\\python\\data_images\\testL0_.png', 
-        #                                 'D:\\projects\\self\\python\\data_images\\testL0.png'], 
-        #          'regions': None, 'hotmap': 1, 'sourceType': 2}
+        params = {'sourceType': 2, 'sources': ['./samples/testL0_.png', './samples/testL0.png'], 'regions': None,
+                  'degree': 1, 'hotmap': 1}
 
         await websocket.send(json.dumps(params))
 
-        while 1:
-            msg = await websocket.recv()
-            print(f"<<< {msg}")
+        cond = 1
+        while cond:
+            try:
+                msg = await websocket.recv()
+                obj = json.loads(msg)
+                if (obj['status'] == 'finish'):
+                    print(f"<<< {msg}")
+                    await websocket.close(code=1000, reason='bye')
+                    cond = 0
+                else:
+                    print(f"<<< {msg}")
+            except Exception as ex:
+                print(ex)
+                cond = 0
 
 asyncio.run(hello())

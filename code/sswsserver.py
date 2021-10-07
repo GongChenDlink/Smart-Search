@@ -15,33 +15,30 @@ async def addTask(taskBody, websocket):
     try:
         dic = json.loads(taskBody)
         print(dic, type(dic))
-        if (dic and 'type' in dic):
+        if (dic and 'sourceType' in dic):
             uuidObj = uuid.uuid4()
             taskId = str(uuidObj)
-            if (dic['type'] == 0):
-                print('compare images')
-                #await websocket.send(json.dumps({'status': 'added', 'taskId': taskId}))
-                #await compare.pHashCmp(dic['source'], dic['threshold'], dic['region'], taskId, websocket)
-
-
-                messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionDetector = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
-
-                await motionDetector.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
-
-                #await motionAnalysis.motionDetect4Video(dic['source'])
-
-                #await motionAnalysis.motionDetect4Images(dic['source'])
-
-            elif (dic['type'] == 1):
+            if (dic['sourceType'] == 1):
                 print('compare video')
-                #await websocket.send(json.dumps({'status': 'added', 'taskId': taskId}))
-                #await compare.frameCmp(dic['source'], dic['threshold'], dic['region'], taskId, websocket)
+                # await websocket.send(json.dumps({'status': 'added', 'taskId': taskId}))
+                # await compare.pHashCmp(dic['source'], dic['threshold'], dic['region'], taskId, websocket)
 
-                messager = WSMessager(taskId="sssssssssss", msger=websocket)
-                motionAnalysis = motion.Motion(msger = messager, hotmap = dic['hotmap'], regions = dic['regions'], degree = dic['degree'])
+                messager = WSMessager(taskId=taskId, msger=websocket)
+                motionDetector = motion.Motion(msger=messager, hotmap=dic['hotmap'], regions=dic['regions'],
+                                               degree=dic['degree'])
 
-                await motionAnalysis.motionDetect(sources = dic['sources'], sourceType = dic['sourceType'])
+                await motionDetector.motionDetect(sources=dic['sources'], sourceType=dic['sourceType'])
+
+            elif (dic['sourceType'] == 2):
+                print('compare images')
+                # await websocket.send(json.dumps({'status': 'added', 'taskId': taskId}))
+                # await compare.frameCmp(dic['source'], dic['threshold'], dic['region'], taskId, websocket)
+
+                messager = WSMessager(taskId=taskId, msger=websocket)
+                motionAnalysis = motion.Motion(msger=messager, hotmap=dic['hotmap'], regions=dic['regions'],
+                                               degree=dic['degree'])
+
+                await motionAnalysis.motionDetect(sources=dic['sources'], sourceType=dic['sourceType'])
 
             else:
                 print('None')
@@ -51,7 +48,7 @@ async def addTask(taskBody, websocket):
             await websocket.send(json.dumps({"Error": 45002}))
 
     except Exception as ex:
-        await websocket.send(json.dumps({"Error": 45000, "Message": ex}))
+        await websocket.send(json.dumps({"Error": 45000, "Message": ex.__str__()}))
 
 
 async def stopTask(taskBody, websocket):
@@ -66,7 +63,7 @@ async def cancelTask(taskBody, websocket):
 
 async def default(taskBody, websocket):
     print("help", taskBody)
-    await websocket.send(json.dumps({'help': {'url': 'ws://127.0.0.1:7000/', 'path': ['add', 'stop', 'cancel']}}))
+    await websocket.send(json.dumps({'help': {'url': 'ws://server_ip:7000/', 'path': ['add', 'stop', 'cancel']}}))
 
 
 handler = {

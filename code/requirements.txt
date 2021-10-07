@@ -1,4 +1,9 @@
+websockets==10.0
+matplotlib==3.4.3
 numpy==1.21.2
 opencv_python==4.5.3.56
-websockets==10.0
-matplotlib==3.3.2
+Pillow==8.3.2
+PyYAML==5.4.1
+torch==1.9.1
+torchsummary==1.5.1
+torchvision==0.10.1

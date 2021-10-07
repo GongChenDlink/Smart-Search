@@ -61,7 +61,6 @@ class Motion():
         # hot map图片的存储目录
         self.hotmapDir = 'hotmap'
 
-
     async def motionDetect(self, sources, sourceType):
         """
             Motion detection
@@ -90,10 +89,10 @@ class Motion():
 
         # 参数检查
         if sources is None:
-            print(f'Invalid sources value')
+            print('Invalid sources value')
             return
         if sourceType is None or sourceType not in [1, 2]:
-            print(f'Invalid sourceType value, valid sourceType values are [1, 2]')
+            print('Invalid sourceType value, valid sourceType values are [1, 2]')
             return
 
         # 视频方式
@@ -103,9 +102,8 @@ class Motion():
         elif sourceType == 2:
             await self.motionDetect4Images(sources)
         else:
-            print(f'Invalid sourceType value and the valid sourceType values are [1, 2]')
+            print('Invalid sourceType value and the valid sourceType values are [1, 2]')
             return
-
 
     async def motionDetect4Videos(self, videoFiles):
         """
@@ -130,20 +128,19 @@ class Motion():
 
         # 参数检查
         if videoFiles is None:
-             print(f'Invalid videoFiles value')
-             return
+            print('Invalid videoFiles value')
+            return
 
         # 遍历进行处理
         for videoFile in videoFiles:
             # 检查视频路径是否真实存在
             if (videoFile is None) or (not os.path.exists(videoFile)):
-                print(f'The video file({videoFile}) does not exist')
+                print('The video file({0}) does not exist'.format(videoFile))
                 continue
 
             # 进行视频检测
             await self.motionDetect4Video(videoFile)
 
-  
     async def motionDetect4Video(self, videoFile):
         """
             Motion detection based on video file
@@ -167,15 +164,15 @@ class Motion():
 
         # 参数检查
         if (videoFile is None) or (not os.path.exists(videoFile)):
-             print(f'The video({videoFile}) does not exist')
-             return
+            print('The video({0}) does not exist'.format(videoFile))
+            return
 
         # 打开视频
         capture = cv2.VideoCapture(videoFile)
 
         # 视频不存在
         if not capture.isOpened:
-            print(f'The video file({videoFile}) does not exist')
+            print(r'The video file({0}) does not exist'.format(videoFile))
             return
 
         # 获取视频相关的参数
@@ -198,10 +195,9 @@ class Motion():
         motionTimes = []
 
         # 参数检查
-        if fps <= 0 or frameCount <=0 or width <= 0 or height <= 0:
+        if fps <= 0 or frameCount <= 0 or width <= 0 or height <= 0:
             print('Invalid video')
             return
-
 
         # 背景剪裁器
         backgroundSubtractor = None
@@ -214,7 +210,6 @@ class Motion():
             # 没有指定检测区域，则默认检测整个图像区域
             if self.regions is None:
                 accumulatedImage = np.zeros((height, width), np.uint8)
-
 
         # 遍历所有的帧
         for i in range(0, frameCount):
@@ -232,7 +227,6 @@ class Motion():
                 # 裁剪图片
                 currentFrame = motionutils.getROI(currentFrame, self.regions)
 
-
             # 生成hotmap
             if self.hotmap != 0:
                 # [高|宽|像素值]
@@ -245,8 +239,8 @@ class Motion():
                 # 二值化
                 ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                 # 去除图像噪声,先腐蚀再膨胀
-                thresh = cv2.erode(thresh,None, iterations=1) 
-                thresh = cv2.dilate(thresh, None, iterations=2) 
+                thresh = cv2.erode(thresh, None, iterations=1)
+                thresh = cv2.dilate(thresh, None, iterations=2)
                 # 相加
                 accumulatedImage = cv2.add(accumulatedImage, thresh)
 
@@ -270,14 +264,13 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    await self.msger.send({'source' : videoFile, 'motionIndex': milliseconds, 'degree' : degree})
+                    await self.msger.send({'source': videoFile, 'motionIndex': milliseconds, 'degree': degree})
 
             # 设置上一帧
             lastFrame = copy.deepcopy(currentFrame)
 
             # sleep
             time.sleep(self.sleepTimes)
-
 
         # 生成hotmap
         if self.hotmap != 0:
@@ -299,8 +292,8 @@ class Motion():
                 # 目录不存在则创建目录
                 if not os.path.exists(self.hotmapDir):
                     os.mkdir(self.hotmapDir)
-                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir, 
-                                              time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir,
+                                         time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
                 cv2.imwrite(hotmapImg, pngImage)
             elif self.hotmap == 2:
                 hotmapImg = base64.b64encode(pngImage).decode()
@@ -311,8 +304,7 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            await self.msger.end({'source' : videoFile, 'hotmapImg': hotmapImg})
-
+            await self.msger.end({'source': videoFile, 'hotmapImg': hotmapImg})
 
     async def motionDetect4Images(self, imageFiles):
         """
@@ -337,9 +329,8 @@ class Motion():
 
         # 参数检查
         if imageFiles is None:
-             print(f'The image file({imageFiles}) does not exist')
-             return
-
+            print('The image file({0}) does not exist'.format(imageFiles))
+            return
 
         # 背景剪裁器
         backgroundSubtractor = None
@@ -370,7 +361,7 @@ class Motion():
             imageFile = imageFiles[i]
             # 检查图片是否真实存在
             if (imageFile is None) or (not os.path.exists(imageFile)):
-                print(f'The image file({imageFile}) does not exist')
+                print('The image file({0}) does not exist'.format(imageFile))
                 continue
 
             # 读取图片
@@ -391,12 +382,11 @@ class Motion():
                 # 初始化accumulatedImage
                 if accumulatedImage is None:
                     accumulatedImage = np.zeros((height, width), np.uint8)
-            
+
             # 检查图片的形状是否一样
             if lastImage is not None and lastImage.shape != currentImage.shape:
-                print(f'The image file({imageFile}) not the same shape')
+                print('The image file({0}) not the same shape'.format(imageFile))
                 continue
-
 
             # 生成hotmap
             if self.hotmap != 0:
@@ -406,11 +396,10 @@ class Motion():
                 # 二值化
                 ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                 # 去除图像噪声,先腐蚀再膨胀
-                thresh = cv2.erode(thresh,None, iterations=1)
-                thresh = cv2.dilate(thresh, None, iterations=2) 
+                thresh = cv2.erode(thresh, None, iterations=1)
+                thresh = cv2.dilate(thresh, None, iterations=2)
                 # 相加
                 accumulatedImage = cv2.add(accumulatedImage, thresh)
-
 
             # 初始化第一张图像
             if lastImage is None:
@@ -423,10 +412,10 @@ class Motion():
             # 大于指定阈值
             if degree > self.degree:
                 motionFiles.append(imageFile)
-                #print('Changed: ', milliseconds, ' degree: ', degree)
+                # print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    await self.msger.send({'source': imageFile,  'motionIndex': i, 'degree' : degree})
+                    await self.msger.send({'source': imageFile, 'motionIndex': i, 'degree': degree})
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
@@ -454,8 +443,8 @@ class Motion():
                 # 目录不存在则创建目录
                 if not os.path.exists(self.hotmapDir):
                     os.mkdir(self.hotmapDir)
-                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir, 
-                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir,
+                                         time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
                 cv2.imwrite(hotmapImg, pngImage)
             elif self.hotmap == 2:
                 hotmapImg = base64.b64encode(pngImage).decode()
@@ -467,43 +456,3 @@ class Motion():
         # 结束消息
         if self.msger is not None:
             await self.msger.end({'hotmapImg': hotmapImg})
-
-
-
-if __name__ == '__main__':
-    
-    start = time.perf_counter()
-
-
-    # 测试参数
-    regions = [
-        [
-            89.1232876712329,
-            117.1232876123287
-        ],
-        [
-            517.47945205479454,
-            215.06849315068493
-        ],
-        [
-            398.71232876712332,
-            823.28767123287672
-        ]
-    ]
-
-    degree = 10
-
-
-    # 视频和图像路径
-    videoFile = 'E:\资料\临时文件\D-Link\Projects\DNH200\SmartSearch\CH05.mp4'
-    images = ['D:\\projects\\self\\python\\data_images\\testL0_.png', 
-              'D:\\projects\\self\\python\\data_images\\testL0.png']
-
-    # 构造对象
-    motionDetector = MotionDetector(degree = degree, regions = regions, hotmap = 1)
-    motionDetector.motionDetect4Video(videoFile)
-    #motionDetector.motionDetect4Images(images)
-
-
-    print('Method execution time: ',  math.ceil(time.perf_counter() - start), ' seconds')
-
