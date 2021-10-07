@@ -14,11 +14,6 @@ import torch.nn.functional as F
 from torchsummary import summary
 
 
-import torch.nn as nn
-import torch.nn.functional as F
-from torchsummary import summary
-
-
 class VGG(nn.Module):
     """
     VGG builder
