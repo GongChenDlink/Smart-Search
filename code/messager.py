@@ -94,3 +94,34 @@ class WSMessager(Messager):
         msg['status'] = 'finish'
         await self.msger.send(json.dumps(msg))
         await asyncio.sleep(0.01)
+
+
+class WSSender(Messager):
+    """
+        WebSocket Messager Class
+    """
+
+    def __init__(self, **kwargs):
+        """
+            Initialization function
+
+            Parameters
+            ----------
+            kwargs : params
+                        taskId : The task id
+                        msger : messager
+
+            Returns
+            -------
+        """
+        super(WSSender, self).__init__(**kwargs)
+
+    def send(self, msg):
+        msg['taskId'] = self.taskId
+        msg['status'] = 'process'
+        self.msger.write_message(json.dumps(msg))
+
+    def end(self, msg):
+        msg['taskId'] = self.taskId
+        msg['status'] = 'finish'
+        self.msger.write_message(json.dumps(msg))
