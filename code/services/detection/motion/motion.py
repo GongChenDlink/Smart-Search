@@ -264,7 +264,7 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.msger.write_message({'source': videoFile, 'motionIndex': milliseconds, 'degree': degree})
+                    self.msger.send({'source': videoFile, 'motionIndex': milliseconds, 'degree': degree})
 
             # 设置上一帧
             lastFrame = copy.deepcopy(currentFrame)
@@ -415,7 +415,7 @@ class Motion():
                 # print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.msger.write_message({'source': imageFile, 'motionIndex': i, 'degree': degree})
+                    self.msger.send({'source': imageFile, 'motionIndex': i, 'degree': degree})
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
