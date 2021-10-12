@@ -5,6 +5,8 @@
     Motion Analysis
 """
 import asyncio
+import json
+
 import cv2
 import copy
 import numpy as np
@@ -14,7 +16,7 @@ import time
 import math
 import base64
 
-from detection.motion import motionutils
+from services.detection.motion import motionutils
 
 
 class Motion():
@@ -280,7 +282,11 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.send({'source' : videoFile, 'index' : milliseconds, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                    try:
+                        self.msger.send({'source' : videoFile, 'index' : milliseconds, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                    except Exception as ex:
+                        # 发生异常时，释放打开的文件句柄
+                        capture.release()
 
             # 设置上一帧
             lastFrame = copy.deepcopy(currentFrame)
@@ -320,7 +326,11 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            self.msger.end({'source' : videoFile, 'index' : None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100})
+            try:
+                self.msger.send({'source' : videoFile, 'index' : None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100, 'status': 'finish'})
+            except Exception as ex:
+                # 发生异常时，释放打开的文件句柄
+                capture.release()
 
     def motionDetect4Images(self, imageFiles):
         """
@@ -438,7 +448,11 @@ class Motion():
                 # print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.send({'source': imageFile, 'index': imageFile, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                    try:
+                        self.msger.send({'source': imageFile, 'index': imageFile, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                    except Exception as ex:
+                        # 发生异常时，释放打开的文件句柄
+                        currentImage.release()
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
@@ -478,4 +492,8 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            self.msger.end({'source': None, 'index': None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100})
+            try:
+                self.msger.send({'source': None, 'index': None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100, 'status': 'finish'})
+            except Exception as ex:
+                # 发生异常时，释放打开的文件句柄
+                currentImage.release()

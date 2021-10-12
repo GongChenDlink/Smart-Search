@@ -66,6 +66,7 @@ class Messager(object):
 class WSMessager(Messager):
     """
         WebSocket Messager Class
+        Be used for websockets lib
     """
 
     def __init__(self, **kwargs):
@@ -99,6 +100,7 @@ class WSMessager(Messager):
 class WSSender(Messager):
     """
         WebSocket Messager Class
+        Be used for autobahn lib
     """
 
     def __init__(self, **kwargs):
@@ -118,10 +120,40 @@ class WSSender(Messager):
 
     def send(self, msg):
         msg['taskId'] = self.taskId
-        msg['status'] = 'process'
-        self.msger.write_message(json.dumps(msg))
+        try:
+            if self.msger.state == 3:
+                self.msger.sendMessage(bytes(msg, encoding="utf8"), isBinary=True)
+        except Exception as sce:
+            print('Error:', sce)
+            raise Exception('websocketError')
 
-    def end(self, msg):
+
+class TornadoSender(Messager):
+    """
+        WebSocket Messager Class
+        Be used for tornado lib
+    """
+
+    def __init__(self, **kwargs):
+        """
+            Initialization function
+
+            Parameters
+            ----------
+            kwargs : params
+                        taskId : The task id
+                        msger : messager
+
+            Returns
+            -------
+        """
+        super(TornadoSender, self).__init__(**kwargs)
+
+    def send(self, msg):
         msg['taskId'] = self.taskId
-        msg['status'] = 'finish'
-        self.msger.write_message(json.dumps(msg))
+        try:
+            # if (self.msger.ws_connection is not None):
+            print('id', id(self.msger))
+            self.msger.write_message(json.dumps(msg))
+        except Exception as ex:
+            raise Exception('WebSocketClosedError')
