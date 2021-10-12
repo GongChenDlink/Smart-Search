@@ -61,7 +61,7 @@ class Motion():
         # hot map图片的存储目录
         self.hotmapDir = 'hotmap'
 
-    def motionDetect(self, sources, sourceType):
+    def motionDetect(self, sources):
         """
             Motion detection
 
@@ -69,10 +69,6 @@ class Motion():
             ----------
             sources : array_like
                         The video or image files to be detected
-            sourceType : int
-                        The source type
-                        1: video
-                        2: images
                     
             Returns
             -------
@@ -80,10 +76,12 @@ class Motion():
                         The source name
             degree : int, optional
                         The value of similarity
-            motionIndex : int, optional
+            index : int or string, optional
                         The time or index of the motion
             hotmapImg : string, optional
                         hot map image
+			progress : int
+						Motion detection progress
 
         """
 
@@ -94,16 +92,30 @@ class Motion():
         if sourceType is None or sourceType not in [1, 2]:
             print('Invalid sourceType value, valid sourceType values are [1, 2]')
             return
+			
+		# 进行数据拆分，拆分为video和image
+        videoFiles = []
+        imageFiles = []
+        for source in sources:
+            # 检查文件是否真实存在
+            if (source is None) or (not os.path.exists(source)):
+                print('The file {0} does not exist'.format(source))
+                continue
+            # 获取文件后缀
+            suffixName = os.path.splitext(source)[1]
+            if suffixName in ['.mp4']:
+                videoFiles.append(source)
+            elif suffixName in ['.bmp', '.jpeg', '.jpg', '.png']:
+                imageFiles.append(source)
+            else:
+                print('Unsupported file format {0}'.format(suffixName))
+
 
         # 视频方式
-        if sourceType == 1:
-            self.motionDetect4Videos(sources)
+        self.motionDetect4Videos(videoFiles)
         # 图片方式
-        elif sourceType == 2:
-            self.motionDetect4Images(sources)
-        else:
-            print('Invalid sourceType value and the valid sourceType values are [1, 2]')
-            return
+        self.motionDetect4Images(imageFiles)
+
 
     def motionDetect4Videos(self, videoFiles):
         """
@@ -120,15 +132,17 @@ class Motion():
                         The source name
             degree : int, optional
                         The value of similarity
-            motionIndex : int, optional
+            index : int, optional
                         The time or index of the motion
             hotmapImg : string, optional
                         hot map image
+			progress : int
+						Motion detection progress						
         """
 
         # 参数检查
-        if videoFiles is None:
-            print('Invalid videoFiles value')
+        if videoFiles is None or len(videoFiles) < 1:
+            print('Empty video files')
             return
 
         # 遍历进行处理
@@ -156,10 +170,12 @@ class Motion():
                         The source name
             degree : int, optional
                         The value of similarity
-            motionIndex : int, optional
+            index : int, optional
                         The time or index of the motion
             hotmapImg : string, optional
                         hot map image
+			progress : int
+						Motion detection progress
         """
 
         # 参数检查
@@ -222,6 +238,9 @@ class Motion():
                 continue
             if currentFrame is None:
                 continue
+				
+			# 计算检测进度
+            progress = int(i / frameCount * 100)
 
             if self.regions is not None:
                 # 裁剪图片
@@ -264,7 +283,7 @@ class Motion():
                 print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.send({'source': videoFile, 'motionIndex': milliseconds, 'degree': degree})
+                    self.msger.send({'source' : videoFile, 'index' : milliseconds, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
 
             # 设置上一帧
             lastFrame = copy.deepcopy(currentFrame)
@@ -304,7 +323,7 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            self.msger.end({'source': videoFile, 'hotmapImg': hotmapImg})
+            self.msger.end({'source' : videoFile, 'index' : None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100})
 
     def motionDetect4Images(self, imageFiles):
         """
@@ -321,15 +340,17 @@ class Motion():
                         The source name
             degree : int, optional
                         The value of similarity
-            motionIndex : int, optional
+            index : string, optional
                         The time or index of the motion
             hotmapImg : string, optional
                         hot map image
+			progress : int
+						Motion detection progress
         """
 
         # 参数检查
-        if imageFiles is None:
-            print('The image file({0}) does not exist'.format(imageFiles))
+        if imageFiles is None or len(imageFiles) < 1:
+            print('Empty image files')
             return
 
         # 背景剪裁器
@@ -354,9 +375,14 @@ class Motion():
 
         # 发生motion的图片
         motionFiles = []
+		
+		# 图片的总数
+        imageCount = len(imageFiles)
 
         # 遍历进行处理
         for i in range(0, len(imageFiles)):
+		    # 计算进度
+            progress = int(i / imageCount * 100)
             # 图片路径
             imageFile = imageFiles[i]
             # 检查图片是否真实存在
@@ -415,7 +441,7 @@ class Motion():
                 # print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
                 if self.msger is not None:
-                    self.msger.send({'source': imageFile, 'motionIndex': i, 'degree': degree})
+                    self.msger.send({'source': imageFile, 'index': imageFile, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
@@ -455,4 +481,4 @@ class Motion():
 
         # 结束消息
         if self.msger is not None:
-            self.msger.end({'hotmapImg': hotmapImg})
+            self.msger.end({'source': None, 'index': None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100})

@@ -39,7 +39,7 @@ def addCommand(taskBody, websocket):
                 motionDetector = motion.Motion(msger=messager, hotmap=dic['hotmap'], regions=dic['regions'],
                                                degree=dic['degree'])
 
-                motionDetector.motionDetect(sources=dic['sources'], sourceType=dic['sourceType'])
+                motionDetector.motionDetect(sources=dic['sources'])
             elif (dic['type'] == 1):
                 print('Face recognition')
 
