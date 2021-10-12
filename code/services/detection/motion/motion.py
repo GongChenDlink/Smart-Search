@@ -55,7 +55,7 @@ class Motion():
         self.threshold = 2
         self.maxValue = 2
         # 睡眠时间
-        self.sleepTimes = 0.05 * 2
+        self.sleepTimes = kwargs.get('sleepTimes', 0.05 * 2)
         # 消息发送器
         self.msger = kwargs.get('msger')
         # 是否生成hotmap并且返回的方式
