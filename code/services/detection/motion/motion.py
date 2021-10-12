@@ -89,9 +89,6 @@ class Motion():
         if sources is None:
             print('Invalid sources value')
             return
-        if sourceType is None or sourceType not in [1, 2]:
-            print('Invalid sourceType value, valid sourceType values are [1, 2]')
-            return
 			
 		# 进行数据拆分，拆分为video和image
         videoFiles = []
