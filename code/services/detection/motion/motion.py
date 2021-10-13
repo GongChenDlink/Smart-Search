@@ -497,7 +497,7 @@ class Motion():
                         cv2.imwrite(hotmapImg, pngImage)
                     except BaseException:
                         try:
-                            if not os.path.exists(self.hotmapDir):
+                            if not os.path.exists(self.defaultHotmapDir):
                                 os.mkdir(self.defaultHotmapDir)
                                 hotmapImg = os.path.join(os.getcwd(), self.defaultHotmapDir, 
                                                     time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
