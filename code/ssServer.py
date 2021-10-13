@@ -7,12 +7,18 @@ import tornado.web
 import tornado.websocket
 import json
 import uuid
+import sqlite3
+from tornado import httpserver
 from services.detection.motion import motion
 from messager import WSSender, TornadoSender
+
+# DNH-200 配置数据库
+dbPath = '/userdata/config/config-data.db'
 
 q = queue.Queue()
 q.maxsize = 1
 
+# ws clients session
 session = []
 
 
@@ -145,7 +151,7 @@ class AddTask(tornado.websocket.WebSocketHandler):
 
 
 def make_app():
-    return tornado.web.Application([
+    app = tornado.web.Application([
         (r"/", MainHandler),
         (r"/websocket", Helper),
         (r"/websocket/add", AddTask),
@@ -155,9 +161,47 @@ def make_app():
         # static_path='./',
     )
 
+    return app
+
+
+def getCert():
+    """
+    从database获取证书文件路径
+    Returns
+    -------
+    {"certfile": "x.pem", "keyfile": "y.pem"}
+    """
+    conn = sqlite3.connect(dbPath)
+    cur = conn.cursor()
+    cur.execute("""SELECT _id,sslCertification FROM CWM_Org_Info;""")
+    orgInfo = cur.fetchone()
+    sslCfg = {}
+    if orgInfo is not None:
+        # print(orgInfo)
+        sslInfo = json.loads(orgInfo[1])
+        if (sslInfo['urlCert'] and sslInfo['urlKeyFile']):
+            cur.execute("SELECT path FROM CWM_File where _id ='{0}'".format(sslInfo['urlCert']['fileId']))
+            cert = cur.fetchone()
+            print(cert[0])
+            sslCfg['certfile'] = cert[0]
+
+            cur.execute("SELECT path FROM CWM_File where _id ='{0}'".format(sslInfo['urlKeyFile']['fileId']))
+            key = cur.fetchone()
+            print(key[0])
+            sslCfg['keyfile'] = key[0]
+
+    cur.close()
+    conn.close()
+    return sslCfg
+
 
 if __name__ == "__main__":
     print('Booting... ', 'PID:', os.getpid())
     app = make_app()
-    app.listen(7000)
+    sslCfg = getCert()
+    if ('certfile' in sslCfg and 'keyfile' in sslCfg):
+        server = httpserver.HTTPServer(app, ssl_options=sslCfg)
+        server.listen(7000, '')
+    else:
+        app.listen(7000, '')
     tornado.ioloop.IOLoop.current().start()
