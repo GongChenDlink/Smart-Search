@@ -21,7 +21,7 @@ from services.detection.motion import motionutils
 
 class Motion():
     """
-        Motion Analysis
+        Motion Detection
     """
 
     def __init__(self, **kwargs):
@@ -37,7 +37,7 @@ class Motion():
                         Vertex coordinates of the detection area
                         Default value is None
             msger : Messager, optional
-                        Send the detected data to other
+                        Send the detected data to caller
                         Default value is None
             hotmap : int, optional
                         Does it need to generate a hotmap?
@@ -50,18 +50,19 @@ class Motion():
             -------
         """
         self.regions = kwargs.get('regions')
-        self.degree = kwargs.get('degree', 10)
+        self.degree = kwargs.get('degree', 10) or 10
         # 对图像进行二值化处理所需要的一些阈值
-        self.threshold = 2
-        self.maxValue = 2
+        self.threshold = kwargs.get('threshold', 2) or 2
+        self.maxValue = kwargs.get('maxValue', 2) or 2
         # 睡眠时间
-        self.sleepTimes = kwargs.get('sleepTimes', 0.05 * 2)
+        self.sleepTimes = kwargs.get('sleepTimes', 0.1) or 0.1
         # 消息发送器
         self.msger = kwargs.get('msger')
         # 是否生成hotmap并且返回的方式
-        self.hotmap = kwargs.get('hotmap', 0)
+        self.hotmap = kwargs.get('hotmap', 0) or 0
         # hot map图片的存储目录
-        self.hotmapDir = 'hotmap'
+        self.defaultHotmapDir = 'hotmap'
+        self.hotmapDir = kwargs.get('hotmapDir', self.defaultHotmapDir) or self.defaultHotmapDir
 
     def motionDetect(self, sources):
         """
@@ -219,7 +220,7 @@ class Motion():
         accumulatedImage = None
 
         # 生成hotmap
-        if self.hotmap != 0:
+        if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
             # 获取背景剪裁器
             backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
             # 没有指定检测区域，则默认检测整个图像区域
@@ -246,7 +247,7 @@ class Motion():
                 currentFrame = motionutils.getROI(currentFrame, self.regions)
 
             # 生成hotmap
-            if self.hotmap != 0:
+            if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
                 # [高|宽|像素值]
                 if accumulatedImage is None:
                     roiHeight, roiWidth = currentFrame.shape[0:2]
@@ -295,7 +296,7 @@ class Motion():
             time.sleep(self.sleepTimes)
 
         # 生成hotmap
-        if self.hotmap != 0:
+        if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
             # 计算热点图
             colorMapImage = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_HOT)
             # 转换成PNG图像，相对于其它图像，PNG图像多了一个透明通道
@@ -313,10 +314,20 @@ class Motion():
                 # 存储文件
                 # 目录不存在则创建目录
                 if not os.path.exists(self.hotmapDir):
-                    os.mkdir(self.hotmapDir)
-                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir,
-                                         time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                cv2.imwrite(hotmapImg, pngImage)
+                    try:
+                        os.mkdir(self.hotmapDir)
+                        hotmapImg = os.path.join(self.hotmapDir, 
+                                                      time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                        cv2.imwrite(hotmapImg, pngImage)
+                    except BaseException:
+                        try:
+                            if not os.path.exists(self.defaultHotmapDir):
+                                os.mkdir(self.defaultHotmapDir)
+                                hotmapImg = os.path.join(os.getcwd(), self.defaultHotmapDir, 
+                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                                cv2.imwrite(hotmapImg, pngImage)
+                        except BaseException:
+                            print('Invalid hot map directory')
             elif self.hotmap == 2:
                 hotmapImg = base64.b64encode(pngImage).decode()
 
@@ -365,7 +376,7 @@ class Motion():
         accumulatedImage = None
 
         # 生成hotmap
-        if self.hotmap != 0:
+        if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
             # 获取背景剪裁器
             backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
 
@@ -411,7 +422,7 @@ class Motion():
                 height, width = currentImage.shape[0:2]
 
             # 生成hotmap
-            if self.hotmap != 0:
+            if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
                 # 初始化accumulatedImage
                 if accumulatedImage is None:
                     accumulatedImage = np.zeros((height, width), np.uint8)
@@ -422,7 +433,7 @@ class Motion():
                 continue
 
             # 生成hotmap
-            if self.hotmap != 0:
+            if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
                 # 为计算热力图做数据准备
                 # 移除背景
                 filter = backgroundSubtractor.apply(currentImage)
@@ -461,7 +472,7 @@ class Motion():
             time.sleep(self.sleepTimes)
 
         # 生成hotmap
-        if self.hotmap != 0:
+        if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
             # 计算热点图
             colorMapImg = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_HOT)
             # 转换成PNG图像，相对于其它图像，PNG图像多了一个透明通道
@@ -479,10 +490,20 @@ class Motion():
                 # 存储文件
                 # 目录不存在则创建目录
                 if not os.path.exists(self.hotmapDir):
-                    os.mkdir(self.hotmapDir)
-                hotmapImg = os.path.join(os.getcwd(), self.hotmapDir,
-                                         time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                cv2.imwrite(hotmapImg, pngImage)
+                    try:
+                        os.mkdir(self.hotmapDir)
+                        hotmapImg = os.path.join(self.hotmapDir, 
+                                            time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                        cv2.imwrite(hotmapImg, pngImage)
+                    except BaseException:
+                        try:
+                            if not os.path.exists(self.hotmapDir):
+                                os.mkdir(self.defaultHotmapDir)
+                                hotmapImg = os.path.join(os.getcwd(), self.defaultHotmapDir, 
+                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                                cv2.imwrite(hotmapImg, pngImage)
+                        except BaseException:
+                            print('Invalid hot map directory')
             elif self.hotmap == 2:
                 hotmapImg = base64.b64encode(pngImage).decode()
 

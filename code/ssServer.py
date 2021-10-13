@@ -93,14 +93,14 @@ def addCommand(taskBody, websocket):
         dic['taskId'] = taskId
         dic['status'] = 'added'
         sendMsg(websocket, json.dumps(dic))
-        if (dic['type'] == 0):
+        if (dic.get('type') == 0):
             print('Motion detection')
             messager = TornadoSender(taskId=taskId, msger=websocket)
-            motionDetector = motion.Motion(msger=messager, hotmap=dic['hotmap'], regions=dic['regions'],
-                                           degree=dic['degree'])
+            motionDetector = motion.Motion(msger=messager, hotmap=dic.get('hotmap'), regions=dic.get('regions'),
+                                           degree=dic.get('degree'))
 
-            motionDetector.motionDetect(sources=dic['sources'])
-        elif (dic['type'] == 1):
+            motionDetector.motionDetect(sources=dic.get('sources'))
+        elif (dic.get('type') == 1):
             print('Face recognition')
         else:
             print('None')
