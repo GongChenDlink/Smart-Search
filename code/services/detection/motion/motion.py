@@ -64,7 +64,7 @@ class Motion():
         self.defaultHotmapDir = 'hotmap'
         self.hotmapDir = kwargs.get('hotmapDir', self.defaultHotmapDir) or self.defaultHotmapDir
 
-    def motionDetect(self, sources):
+    async def motionDetect(self, sources):
         """
             Motion detection
 
@@ -112,12 +112,12 @@ class Motion():
 
 
         # 视频方式
-        self.motionDetect4Videos(videoFiles)
+        await self.motionDetect4Videos(videoFiles)
         # 图片方式
-        self.motionDetect4Images(imageFiles)
+        await self.motionDetect4Images(imageFiles)
 
 
-    def motionDetect4Videos(self, videoFiles):
+    async def motionDetect4Videos(self, videoFiles):
         """
             Motion detection based on videos file
 
@@ -153,9 +153,9 @@ class Motion():
                 continue
 
             # 进行视频检测
-            self.motionDetect4Video(videoFile)
+            await self.motionDetect4Video(videoFile)
 
-    def motionDetect4Video(self, videoFile):
+    async def motionDetect4Video(self, videoFile):
         """
             Motion detection based on video file
 
@@ -284,7 +284,9 @@ class Motion():
                 # 发送消息
                 if self.msger is not None:
                     try:
-                        self.msger.send({'source' : videoFile, 'index' : milliseconds, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                        self.msger.send(
+                            {'source': videoFile, 'index': milliseconds, 'degree': degree, 'hotmapImg': None,
+                             'progress': progress, 'status': 'process'})
                     except Exception as ex:
                         # 发生异常时，释放打开的文件句柄
                         capture.release()
@@ -293,7 +295,7 @@ class Motion():
             lastFrame = copy.deepcopy(currentFrame)
 
             # sleep
-            time.sleep(self.sleepTimes)
+            await asyncio.sleep(self.sleepTimes)
 
         # 生成hotmap
         if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
@@ -338,12 +340,14 @@ class Motion():
         # 结束消息
         if self.msger is not None:
             try:
-                self.msger.send({'source' : videoFile, 'index' : None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100, 'status': 'finish'})
+                self.msger.send(
+                    {'source': videoFile, 'index': None, 'degree': None, 'hotmapImg': hotmapImg, 'progress': 100,
+                     'status': 'finish'})
             except Exception as ex:
                 # 发生异常时，释放打开的文件句柄
                 capture.release()
 
-    def motionDetect4Images(self, imageFiles):
+    async def motionDetect4Images(self, imageFiles):
         """
             Motion detection based on images
 
@@ -460,16 +464,17 @@ class Motion():
                 # 发送消息
                 if self.msger is not None:
                     try:
-                        self.msger.send({'source': imageFile, 'index': imageFile, 'degree' : degree, 'hotmapImg': None, 'progress' : progress})
+                        self.msger.send({'source': imageFile, 'index': imageFile, 'degree': degree, 'hotmapImg': None,
+                                         'progress': progress, 'status': 'process'})
                     except Exception as ex:
-                        # 发生异常时，释放打开的文件句柄
-                        currentImage.release()
+                        # 发生异常时
+                        print('Exception:', ex.__doc__)
 
             # 设置上一幅图片
             lastImage = copy.deepcopy(currentImage)
 
             # sleep
-            time.sleep(self.sleepTimes)
+            await asyncio.sleep(self.sleepTimes)
 
         # 生成hotmap
         if (self.hotmap is not None) and (self.hotmap != 0) and (self.hotmap in [1, 2]):
@@ -514,7 +519,8 @@ class Motion():
         # 结束消息
         if self.msger is not None:
             try:
-                self.msger.send({'source': None, 'index': None, 'degree' : None, 'hotmapImg': hotmapImg, 'progress' : 100, 'status': 'finish'})
+                self.msger.send({'source': None, 'index': None, 'degree': None, 'hotmapImg': hotmapImg, 'progress': 100,
+                                 'status': 'finish'})
             except Exception as ex:
-                # 发生异常时，释放打开的文件句柄
-                currentImage.release()
+                # 发生异常时
+                print('Exception:', ex.__doc__)

@@ -8,56 +8,19 @@ import tornado.websocket
 import json
 import uuid
 import sqlite3
+import sys
 from tornado import httpserver
 from services.detection.motion import motion
 from messager import WSSender, TornadoSender
 
-# DNH-200 配置数据库
-dbPath = '/userdata/config/config-data.db'
+USAGE = {'help': {'url': 'ws://server_ip:7000/websocket/', 'path': ['add', 'stop', 'cancel']}}
+# service listen port
+G_LISTEN_PORT = 7000
+# DNH-200 config database
+CONFIG_DB_PATH = '/userdata/config/config-data.db'
 
-q = queue.Queue()
-q.maxsize = 1
-
-# ws clients session
-session = []
-
-
-def TaskAddHandler(arg):
-    while True:
-        task = q.get()
-        print('arg:', arg)
-        print('get ws id:', id(task['ws']))
-        try:
-            dic = task['msg']
-            if (dic and 'type' in dic):
-                if (dic['type'] == 0):
-                    print('Motion detection')
-                    messager = TornadoSender(taskId=dic['taskId'], msger=task['ws'])
-                    motionDetector = motion.Motion(msger=messager, hotmap=dic['hotmap'],
-                                                   regions=dic['regions'], degree=dic['degree'])
-
-                    motionDetector.motionDetect(sources=dic['sources'], sourceType=dic['sourceType'])
-                elif (dic['type'] == 1):
-                    print('Face recognition')
-
-                else:
-                    print('None')
-                    sendMsg(task['ws'], json.dumps({"Error": 45003}))
-            else:
-                print('None')
-                sendMsg(task['ws'], json.dumps({"Error": 45002}))
-
-        except Exception as ex:
-            sendMsg(task['ws'], json.dumps({"Error": 45000, "Message": ex.__str__()}))
-        finally:
-            q.task_done()
-
-
-threading.Thread(target=TaskAddHandler, daemon=True, args=(1,)).start()
-
-q.join()
-
-usage = {'help': {'url': 'ws://server_ip:7000/', 'path': ['add', 'stop', 'cancel']}}
+# ws clients sessions
+SESSIONS = []
 
 
 def sendMsg(websocket, msg):
@@ -70,7 +33,7 @@ def sendMsg(websocket, msg):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write(json.dumps(usage))
+        self.write(json.dumps(USAGE))
 
 
 class Helper(tornado.websocket.WebSocketHandler):
@@ -78,14 +41,14 @@ class Helper(tornado.websocket.WebSocketHandler):
         print("WebSocket opened")
 
     def on_message(self, message):
-        sendMsg(self, json.dumps(usage))
+        sendMsg(self, json.dumps(USAGE))
         self.close(1000, 'bye')
 
     def on_close(self):
         print("WebSocket closed")
 
 
-def addCommand(taskBody, websocket):
+async def addCommand(taskBody, websocket):
     dic = json.loads(taskBody)
     if (dic and 'type' in dic):
         uuidObj = uuid.uuid4()
@@ -99,50 +62,49 @@ def addCommand(taskBody, websocket):
             motionDetector = motion.Motion(msger=messager, hotmap=dic.get('hotmap'), regions=dic.get('regions'),
                                            degree=dic.get('degree'))
 
-            motionDetector.motionDetect(sources=dic.get('sources'))
+            await motionDetector.motionDetect(sources=dic.get('sources'))
         elif (dic.get('type') == 1):
             print('Face recognition')
         else:
-            print('None')
-            sendMsg(websocket, json.dumps({"Error": 45003}))
+            print('Analysis type is not supported')
+            sendMsg(websocket,
+                    json.dumps({"status": "error", "code": 41141, "message": "Analysis type is not supported"}))
     else:
-        print('None')
-        sendMsg(websocket, json.dumps({"Error": 45002}))
+        print('Missing analysis type')
+        sendMsg(websocket, json.dumps({"status": "error", "code": 41140, "message": "Missing analysis type"}))
 
 
 class AddTask(tornado.websocket.WebSocketHandler):
-    def open(self):
-        session.append(self)
-        print("WebSocket opened:", id(self))
+    async def open(self):
+        print('before:', len(SESSIONS))
+        SESSIONS.append(self)
+        if len(SESSIONS) > 1:
+            sendMsg(self, json.dumps(
+                {"status": "error", "code": 41143,
+                 "message": "There is already a running analysis task. Please try again later."}))
+            self.close(1013, 'busy')
+        else:
+            print("WebSocket opened:", id(self))
+        print('after:', len(SESSIONS))
 
-    def on_message(self, message):
-        print(message)
+    async def on_message(self, message):
         try:
-            addCommand(message, self)
-
-            # dic = json.loads(message)
-            # uuidObj = uuid.uuid4()
-            # taskId = str(uuidObj)
-            # dic['taskId'] = taskId
-            #
-            # q.put({'ws': self, 'msg': dic})
-            #
-            # dic['status'] = 'added'
-            # sendMsg(self, json.dumps(dic))
+            await addCommand(message, self)
         except Exception as ex:
+            SESSIONS.remove(self)
             print(ex.__str__())
 
-    def on_ping(self, data):
+    async def on_ping(self, data):
         print('ping:', data)
 
-    def on_pong(self, data):
+    async def on_pong(self, data):
         print('pong:', data)
         if not data:
             byte_ping = round(time.time() * 1000).to_bytes(13, 'big')
             self.ping(byte_ping)
 
     def on_close(self):
-        session.remove(self)
+        SESSIONS.remove(self)
         print("WebSocket closed, code:{0} reason:{1}.".format(self.close_code, self.close_reason))
 
     # 允许所有跨域通讯，解决403问题
@@ -171,7 +133,7 @@ def getCert():
     -------
     {"certfile": "x.pem", "keyfile": "y.pem"}
     """
-    conn = sqlite3.connect(dbPath)
+    conn = sqlite3.connect(CONFIG_DB_PATH)
     cur = conn.cursor()
     cur.execute("""SELECT _id,sslCertification FROM CWM_Org_Info;""")
     orgInfo = cur.fetchone()
@@ -201,7 +163,13 @@ if __name__ == "__main__":
     sslCfg = getCert()
     if ('certfile' in sslCfg and 'keyfile' in sslCfg):
         server = httpserver.HTTPServer(app, ssl_options=sslCfg)
-        server.listen(7000, '')
+        if sys.platform == "win32":
+            print('single_process')
+            server.listen(G_LISTEN_PORT)
+        else:
+            print('multi_process')
+            server.bind(G_LISTEN_PORT)
+            server.start(0)
     else:
-        app.listen(7000, '')
+        app.listen(G_LISTEN_PORT)
     tornado.ioloop.IOLoop.current().start()

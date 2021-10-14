@@ -153,7 +153,7 @@ class TornadoSender(Messager):
         msg['taskId'] = self.taskId
         try:
             # if (self.msger.ws_connection is not None):
-            print('id', id(self.msger))
+            # print('id', id(self.msger))
             self.msger.write_message(json.dumps(msg))
         except Exception as ex:
             raise Exception('WebSocketClosedError')
