@@ -50,12 +50,12 @@ class Motion():
             -------
         """
         self.regions = kwargs.get('regions')
-        self.degree = kwargs.get('degree', 10) or 10
+        self.degree = kwargs.get('degree', 10)
         # 对图像进行二值化处理所需要的一些阈值
-        self.threshold = kwargs.get('threshold', 2) or 2
-        self.maxValue = kwargs.get('maxValue', 2) or 2
+        self.threshold = kwargs.get('threshold', 2)
+        self.maxValue = kwargs.get('maxValue', 2)
         # 睡眠时间
-        self.sleepTimes = kwargs.get('sleepTimes', 0.1) or 0.1
+        self.sleepTimes = kwargs.get('sleepTimes', 0.1)
         # 消息发送器
         self.msger = kwargs.get('msger')
         # 是否生成hotmap并且返回的方式

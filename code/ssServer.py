@@ -161,15 +161,14 @@ if __name__ == "__main__":
     print('Booting... ', 'PID:', os.getpid())
     app = make_app()
     sslCfg = getCert()
+
+    env = os.getenv("NODE_ENV")
+    add = '0.0.0.0'
+    if env is not None and env == 'Production_xxx':
+        add = 'localhost'
     if ('certfile' in sslCfg and 'keyfile' in sslCfg):
         server = httpserver.HTTPServer(app, ssl_options=sslCfg)
-        if sys.platform == "win32":
-            print('single_process')
-            server.listen(G_LISTEN_PORT)
-        else:
-            print('multi_process')
-            server.bind(G_LISTEN_PORT)
-            server.start(0)
+        server.listen(G_LISTEN_PORT, add)
     else:
-        app.listen(G_LISTEN_PORT)
+        app.listen(G_LISTEN_PORT, add)
     tornado.ioloop.IOLoop.current().start()
