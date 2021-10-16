@@ -12,12 +12,17 @@ import sys
 from tornado import httpserver
 from services.detection.motion import motion
 from messager import WSSender, TornadoSender
+from jose import jwt
+import utils
 
 USAGE = {'help': {'url': 'ws://server_ip:7000/websocket/', 'path': ['add', 'stop', 'cancel']}}
 # service listen port
 G_LISTEN_PORT = 7000
 # DNH-200 config database
 CONFIG_DB_PATH = '/userdata/config/config-data.db'
+CONFIG_WEB = '/oem/nc1/config/systemconfig.json'
+AES_KEY = '9cd5b4cfa1048596'
+AES_IV = b'e6db271db12d4d47'
 
 # ws clients sessions
 SESSIONS = []
@@ -77,14 +82,46 @@ async def addCommand(taskBody, websocket):
 class AddTask(tornado.websocket.WebSocketHandler):
     async def open(self):
         print('before:', len(SESSIONS))
-        SESSIONS.append(self)
-        if len(SESSIONS) > 1:
-            sendMsg(self, json.dumps(
-                {"status": "error", "code": 41143,
-                 "message": "There is already a running analysis task. Please try again later."}))
-            self.close(1013, 'busy')
+        paras = self.request.arguments
+        token = ''
+        for k in paras:
+            print('para:', k, '=', bytes.decode(paras[k][0]))
+            if k == "token":
+                token = bytes.decode(paras[k][0])
+                pos = token.find(" ")
+                if pos > 0:
+                    token = token[pos + 1:]
+        verified = False
+        try:
+            crypt = utils.SCrypt(AES_KEY, AES_IV)
+            # done 从config/systemconfig.json获取jwt_token
+            cfgFd = open(CONFIG_WEB, 'r', encoding='utf-8')
+            webCfg = json.load(cfgFd)
+            cfgFd.close()
+            originKey = webCfg.get('Production_dnh', {}).get('jwt_secret', 'b3eaad0a469d13a884f3d09e0952b72b')
+            key = crypt.encrypt(originKey)
+            jwt.decode(token, key, algorithms=['HS256'])
+            verified = True
+            # 解密测试
+            # plain = crypt.decrypt(key)
+            # print(plain)
+
+        except Exception as ex:
+            print(ex)
+
+        if verified:
+            SESSIONS.append(self)
+            if len(SESSIONS) > 1:
+                sendMsg(self, json.dumps(
+                    {"status": "error", "code": 41143,
+                     "message": "There is already a running analysis task. Please try again later."}))
+                self.close(1013, 'busy')
+            else:
+                print("WebSocket opened:", id(self))
         else:
-            print("WebSocket opened:", id(self))
+            sendMsg(self, json.dumps(
+                {"status": "error", "code": 41139, "message": "Illegal token."}))
+            self.close(1008, 'Unauthorized')
         print('after:', len(SESSIONS))
 
     async def on_message(self, message):

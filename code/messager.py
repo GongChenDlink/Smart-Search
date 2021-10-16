@@ -122,7 +122,7 @@ class WSSender(Messager):
         msg['taskId'] = self.taskId
         try:
             if self.msger.state == 3:
-                self.msger.sendMessage(bytes(msg, encoding="utf8"), isBinary=True)
+                self.msger.sendMessage(bytes(msg, encoding="utf-8"), isBinary=True)
         except Exception as sce:
             print('Error:', sce)
             raise Exception('websocketError')
