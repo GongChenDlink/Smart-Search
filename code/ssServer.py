@@ -93,18 +93,19 @@ class AddTask(tornado.websocket.WebSocketHandler):
                     token = token[pos + 1:]
         verified = False
         try:
-            crypt = utils.SCrypt(AES_KEY, AES_IV)
-            # done 从config/systemconfig.json获取jwt_token
-            cfgFd = open(CONFIG_WEB, 'r', encoding='utf-8')
-            webCfg = json.load(cfgFd)
-            cfgFd.close()
-            originKey = webCfg.get('Production_dnh', {}).get('jwt_secret', 'b3eaad0a469d13a884f3d09e0952b72b')
-            key = crypt.encrypt(originKey)
-            jwt.decode(token, key, algorithms=['HS256'])
-            verified = True
-            # 解密测试
-            # plain = crypt.decrypt(key)
-            # print(plain)
+            if len(token) > 0:
+                crypt = utils.SCrypt(AES_KEY, AES_IV)
+                # done 从config/systemconfig.json获取jwt_token
+                cfgFd = open(CONFIG_WEB, 'r', encoding='utf-8')
+                webCfg = json.load(cfgFd)
+                cfgFd.close()
+                originKey = webCfg.get('Production_dnh', {}).get('jwt_secret', 'b3eaad0a469d13a884f3d09e0952b72b')
+                key = crypt.encrypt(originKey)
+                jwt.decode(token, key, algorithms=['HS256'])
+                verified = True
+                # 解密测试
+                # plain = crypt.decrypt(key)
+                # print(plain)
 
         except Exception as ex:
             print(ex)
