@@ -15,6 +15,7 @@ from messager import WSSender, TornadoSender
 from jose import jwt
 import utils
 
+ENV = 'Production_dnh'
 USAGE = {'help': {'url': 'ws://server_ip:7000/websocket/', 'path': ['add', 'stop', 'cancel']}}
 # service listen port
 G_LISTEN_PORT = 7000
@@ -24,6 +25,7 @@ CONFIG_WEB = '/oem/nc1/config/systemconfig.json'
 AES_KEY = '9cd5b4cfa1048596'
 AES_IV = b'e6db271db12d4d47'
 
+RELEASE = False
 # ws clients sessions
 SESSIONS = []
 
@@ -34,6 +36,43 @@ def sendMsg(websocket, msg):
     except Exception as ex:
         print('Error:WebSocketClosedError')
         # raise Exception('WebSocketClosedError')
+
+
+def checkToken(paras: dict) -> bool:
+    """校验客户端token
+
+    :param paras: 客户端请求参数
+    :type paras: dict[str,list[bytes]]
+    :return: 校验结果
+    :rtype: bool
+    """
+    verified = False
+    token = ''
+    for k in paras:
+        print('para:', k, '=', bytes.decode(paras[k][0]))
+        if k == "token":
+            token = bytes.decode(paras[k][0])
+            pos = token.find(" ")
+            if pos > 0:
+                token = token[pos + 1:]
+    try:
+        if len(token) > 0:
+            crypt = utils.SCrypt(AES_KEY, AES_IV)
+            # done 从config/systemconfig.json获取jwt_token
+            cfgFd = open(CONFIG_WEB, 'r', encoding='utf-8')
+            webCfg = json.load(cfgFd)
+            cfgFd.close()
+            originKey = webCfg.get(ENV, {}).get('jwt_secret', 'b3eaad0a469d13a884f3d09e0952b72b')
+            key = crypt.encrypt(originKey)
+            jwt.decode(token, key, algorithms=['HS256'])
+            verified = True
+            # 解密测试
+            # plain = crypt.decrypt(key)
+            # print(plain)
+    except Exception as ex:
+        print(ex)
+    finally:
+        return verified
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -81,35 +120,8 @@ async def addCommand(taskBody, websocket):
 
 class AddTask(tornado.websocket.WebSocketHandler):
     async def open(self):
-        print('before:', len(SESSIONS))
-        paras = self.request.arguments
-        token = ''
-        for k in paras:
-            print('para:', k, '=', bytes.decode(paras[k][0]))
-            if k == "token":
-                token = bytes.decode(paras[k][0])
-                pos = token.find(" ")
-                if pos > 0:
-                    token = token[pos + 1:]
-        verified = False
-        try:
-            if len(token) > 0:
-                crypt = utils.SCrypt(AES_KEY, AES_IV)
-                # done 从config/systemconfig.json获取jwt_token
-                cfgFd = open(CONFIG_WEB, 'r', encoding='utf-8')
-                webCfg = json.load(cfgFd)
-                cfgFd.close()
-                originKey = webCfg.get('Production_dnh', {}).get('jwt_secret', 'b3eaad0a469d13a884f3d09e0952b72b')
-                key = crypt.encrypt(originKey)
-                jwt.decode(token, key, algorithms=['HS256'])
-                verified = True
-                # 解密测试
-                # plain = crypt.decrypt(key)
-                # print(plain)
-
-        except Exception as ex:
-            print(ex)
-
+        # print('before:', len(SESSIONS))
+        verified = checkToken(self.request.arguments)
         if verified:
             SESSIONS.append(self)
             if len(SESSIONS) > 1:
@@ -123,14 +135,16 @@ class AddTask(tornado.websocket.WebSocketHandler):
             sendMsg(self, json.dumps(
                 {"status": "error", "code": 41139, "message": "Illegal token."}))
             self.close(1008, 'Unauthorized')
-        print('after:', len(SESSIONS))
+        # print('after:', len(SESSIONS))
 
     async def on_message(self, message):
-        try:
-            await addCommand(message, self)
-        except Exception as ex:
-            SESSIONS.remove(self)
-            print(ex.__str__())
+        verified = checkToken(self.request.arguments)
+        if verified:
+            try:
+                await addCommand(message, self)
+            except Exception as ex:
+                SESSIONS.remove(self)
+                print(ex.__str__())
 
     async def on_ping(self, data):
         print('ping:', data)
@@ -179,7 +193,7 @@ def getCert():
     if orgInfo is not None:
         # print(orgInfo)
         sslInfo = json.loads(orgInfo[1])
-        if (sslInfo['urlCert'] and sslInfo['urlKeyFile']):
+        if sslInfo['urlCert'] and sslInfo['urlKeyFile']:
             cur.execute("SELECT path FROM CWM_File where _id ='{0}'".format(sslInfo['urlCert']['fileId']))
             cert = cur.fetchone()
             print(cert[0])
@@ -202,9 +216,9 @@ if __name__ == "__main__":
 
     env = os.getenv("NODE_ENV")
     add = '0.0.0.0'
-    if env is not None and env == 'Production_xxx':
+    if env is not None and env == ENV and RELEASE:
         add = 'localhost'
-    if ('certfile' in sslCfg and 'keyfile' in sslCfg):
+    if 'certfile' in sslCfg and 'keyfile' in sslCfg:
         server = httpserver.HTTPServer(app, ssl_options=sslCfg)
         server.listen(G_LISTEN_PORT, add)
     else:
