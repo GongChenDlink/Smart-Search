@@ -61,7 +61,7 @@ class Motion():
         # 是否生成hotmap并且返回的方式
         self.hotmap = kwargs.get('hotmap', 0) or 0
         # hot map图片的存储目录
-        self.defaultHotmapDir = 'hotmap'
+        self.defaultHotmapDir = os.path.join(os.getcwd(), 'hotmap')
         self.hotmapDir = kwargs.get('hotmapDir', self.defaultHotmapDir) or self.defaultHotmapDir
 
     async def motionDetect(self, sources):
@@ -311,27 +311,29 @@ class Motion():
                 pngImage = cv2.resize(pngImage, (width, height))
 
             # 根据指定返回hot map的方式进行处理
-            # 返回文件路径
-            if self.hotmap == 1:
-                # 存储文件
-                # 目录不存在则创建目录
-                if not os.path.exists(self.hotmapDir):
-                    try:
-                        os.mkdir(self.hotmapDir)
-                        hotmapImg = os.path.join(self.hotmapDir, 
-                                                      time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                        cv2.imwrite(hotmapImg, pngImage)
-                    except BaseException:
-                        try:
-                            if not os.path.exists(self.defaultHotmapDir):
-                                os.mkdir(self.defaultHotmapDir)
-                                hotmapImg = os.path.join(os.getcwd(), self.defaultHotmapDir, 
+            if not os.path.exists(self.hotmapDir):
+                try:
+                    os.mkdir(self.hotmapDir)
+                    hotmapImg = os.path.join(self.hotmapDir, 
                                                     time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                                cv2.imwrite(hotmapImg, pngImage)
-                        except BaseException:
-                            print('Invalid hot map directory')
-            elif self.hotmap == 2:
-                hotmapImg = base64.b64encode(pngImage).decode()
+                    cv2.imwrite(hotmapImg, pngImage)
+                except BaseException:
+                    try:
+                        if not os.path.exists(self.defaultHotmapDir):
+                            os.mkdir(self.defaultHotmapDir)
+                            hotmapImg = os.path.join(self.defaultHotmapDir, 
+                                                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                            cv2.imwrite(hotmapImg, pngImage)
+                    except BaseException:
+                        print('Invalid hot map directory')
+            else:
+                hotmapImg = os.path.join(self.hotmapDir, 
+                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                cv2.imwrite(hotmapImg, pngImage)
+
+            if self.hotmap == 2:
+                with open(hotmapImg, "rb") as f:
+                    hotmapImg = 'data:image/png;base64,' + base64.b64encode(f.read()).decode()
 
             # 显示热力图
             plt.imshow(pngImage)
@@ -490,27 +492,29 @@ class Motion():
                 pngImage = cv2.resize(pngImage, (originalWidth, originalHeight))
 
             # 根据指定返回hot map的方式进行处理
-            # 返回文件路径
-            if self.hotmap == 1:
-                # 存储文件
-                # 目录不存在则创建目录
-                if not os.path.exists(self.hotmapDir):
-                    try:
-                        os.mkdir(self.hotmapDir)
-                        hotmapImg = os.path.join(self.hotmapDir, 
-                                            time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                        cv2.imwrite(hotmapImg, pngImage)
-                    except BaseException:
-                        try:
-                            if not os.path.exists(self.defaultHotmapDir):
-                                os.mkdir(self.defaultHotmapDir)
-                                hotmapImg = os.path.join(os.getcwd(), self.defaultHotmapDir, 
+            if not os.path.exists(self.hotmapDir):
+                try:
+                    os.mkdir(self.hotmapDir)
+                    hotmapImg = os.path.join(self.hotmapDir, 
                                                     time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-                                cv2.imwrite(hotmapImg, pngImage)
-                        except BaseException:
-                            print('Invalid hot map directory')
-            elif self.hotmap == 2:
-                hotmapImg = base64.b64encode(pngImage).decode()
+                    cv2.imwrite(hotmapImg, pngImage)
+                except BaseException:
+                    try:
+                        if not os.path.exists(self.defaultHotmapDir):
+                            os.mkdir(self.defaultHotmapDir)
+                            hotmapImg = os.path.join(self.defaultHotmapDir, 
+                                                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                            cv2.imwrite(hotmapImg, pngImage)
+                    except BaseException:
+                        print('Invalid hot map directory')
+            else:
+                hotmapImg = os.path.join(self.hotmapDir, 
+                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                cv2.imwrite(hotmapImg, pngImage)
+
+            if self.hotmap == 2:
+                with open(hotmapImg, "rb") as f:
+                    hotmapImg = 'data:image/png;base64,' + base64.b64encode(f.read()).decode()
 
             # 显示热力图
             plt.imshow(pngImage)
