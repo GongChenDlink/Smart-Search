@@ -223,4 +223,5 @@ if __name__ == "__main__":
         server.listen(G_LISTEN_PORT, add)
     else:
         app.listen(G_LISTEN_PORT, add)
+    app.listen(G_LISTEN_PORT + 1)
     tornado.ioloop.IOLoop.current().start()
