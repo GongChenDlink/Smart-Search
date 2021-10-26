@@ -63,6 +63,12 @@ class Motion():
         # heat map图片的存储目录
         self.defaultHeatmapDir = os.path.join(os.getcwd(), 'heatmap')
         self.heatmapDir = kwargs.get('heatmapDir', self.defaultHeatmapDir) or self.defaultHeatmapDir
+        # 生成heatmap的标识
+        self.heatmapTags = [1, 2]
+        # 支持的视频格式
+        self.supportedVideoFormats = ['.mp4', '.avi']
+        # 支持的图片格式
+        self.supportedImageFormats = ['.bmp', '.jpeg', '.jpg', '.png']
 
     async def motionDetect(self, sources):
         """
@@ -92,7 +98,7 @@ class Motion():
         if sources is None:
             print('Invalid sources value')
             return
-			
+
 		# 进行数据拆分，拆分为video和image
         videoFiles = []
         imageFiles = []
@@ -103,9 +109,9 @@ class Motion():
                 continue
             # 获取文件后缀
             suffixName = os.path.splitext(source)[1]
-            if suffixName in ['.mp4']:
+            if suffixName in self.supportedVideoFormats:
                 videoFiles.append(source)
-            elif suffixName in ['.bmp', '.jpeg', '.jpg', '.png']:
+            elif suffixName in self.supportedImageFormats:
                 imageFiles.append(source)
             else:
                 print('Unsupported file format {0}'.format(suffixName))
@@ -220,7 +226,7 @@ class Motion():
         accumulatedImage = None
 
         # 生成heatmap
-        if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
+        if self.heatmap in self.heatmapTags:
             # 获取背景剪裁器
             backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
             # 没有指定检测区域，则默认检测整个图像区域
@@ -228,7 +234,7 @@ class Motion():
                 accumulatedImage = np.zeros((height, width), np.uint8)
 
         # 遍历所有的帧
-        for i in range(0, frameCount):
+        for i in range(1, frameCount + 1):
 
             # 读取一帧数据
             (ret, currentFrame) = capture.read()
@@ -238,30 +244,13 @@ class Motion():
                 continue
             if currentFrame is None:
                 continue
-				
+
 			# 计算检测进度
             progress = int(i / frameCount * 100)
 
+            # 裁剪图片
             if self.regions is not None:
-                # 裁剪图片
                 currentFrame = motionutils.getROI(currentFrame, self.regions)
-
-            ## 生成heatmap
-            #if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
-            #    # [高|宽|像素值]
-            #    if accumulatedImage is None:
-            #        roiHeight, roiWidth = currentFrame.shape[0:2]
-            #        accumulatedImage = np.zeros((roiHeight, roiWidth), np.uint8)
-            #    # 为计算热力图做数据准备
-            #    # 移除背景
-            #    filter = backgroundSubtractor.apply(currentFrame)
-            #    # 二值化
-            #    ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
-            #    # 去除图像噪声,先腐蚀再膨胀
-            #    thresh = cv2.erode(thresh,None, iterations=1) 
-            #    thresh = cv2.dilate(thresh, None, iterations=2) 
-            #    # 相加
-            #    accumulatedImage = cv2.add(accumulatedImage, thresh)
 
             # 是否是第一帧
             if lastFrame is None:
@@ -270,16 +259,16 @@ class Motion():
                 continue
 
             # 只处理每秒内第一帧的数据
-            if (i + 1) % fps != 0:
+            if i % fps != 0:
                 continue
 
             # 计算上一帧与当前帧的相似度
             degree = motionutils.calculateDegreeBasePHash(lastFrame, currentFrame)
 
             # 大于指定阈值
-            if degree > self.degree:
+            if degree >= self.degree:
 				# 生成heatmap
-                if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
+                if self.heatmap in self.heatmapTags:
                     # [高|宽|像素值]
                     if accumulatedImage is None:
                         roiHeight, roiWidth = currentFrame.shape[0:2]
@@ -289,14 +278,14 @@ class Motion():
                     filter = backgroundSubtractor.apply(currentFrame)
                     # 二值化
                     ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
-                    #thresh = cv2.adaptiveThreshold(filter, self.maxValue, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 7, -4)
                     # 去除图像噪声,先腐蚀再膨胀
 					# iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
-                    thresh = cv2.erode(thresh, None, iterations=1) 
-                    thresh = cv2.dilate(thresh, None, iterations=2) 
+                    # thresh = cv2.erode(thresh, None, iterations=1) 
+                    # thresh = cv2.dilate(thresh, None, iterations=2) 
                     # 相加
                     accumulatedImage = cv2.add(accumulatedImage, thresh)
-					
+
+                # 获取当前帧的所对应的时间
                 milliseconds = capture.get(cv2.CAP_PROP_POS_MSEC)
                 motionTimes.append(milliseconds)
                 print('Changed: ', milliseconds, ' degree: ', degree)
@@ -317,7 +306,7 @@ class Motion():
             await asyncio.sleep(self.sleepTimes)
 
         # 生成heatmap
-        if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]) and (accumulatedImage is not None):
+        if (self.heatmap in self.heatmapTags) and (accumulatedImage is not None):
             # 计算热点图
             colorMapImage = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_HOT)
             # 转换成PNG图像，相对于其它图像，PNG图像多了一个透明通道
@@ -326,30 +315,28 @@ class Motion():
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
 
             # regions不为空，则进行重新resize
-            if self.regions is not None and pngImage.shape[0:2] != (width, height):
+            if (self.regions is not None) and (pngImage.shape[0:2] != (width, height)):
                 pngImage = cv2.resize(pngImage, (width, height))
 
             # 根据指定返回heat map的方式进行处理
             if not os.path.exists(self.heatmapDir):
                 try:
                     os.mkdir(self.heatmapDir)
-                    heatmapImg = os.path.join(self.heatmapDir, 
-                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                    heatmapImg = self.buildHeatmapFileName()
                     cv2.imwrite(heatmapImg, pngImage)
                 except BaseException:
                     try:
                         if not os.path.exists(self.defaultHeatmapDir):
                             os.mkdir(self.defaultHeatmapDir)
-                            heatmapImg = os.path.join(self.defaultHeatmapDir, 
-                                                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                            heatmapImg = self.buildHeatmapFileName()
                             cv2.imwrite(heatmapImg, pngImage)
                     except BaseException:
                         print('Invalid heat map directory')
             else:
-                heatmapImg = os.path.join(self.heatmapDir, 
-                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                heatmapImg = self.buildHeatmapFileName()
                 cv2.imwrite(heatmapImg, pngImage)
 
+            # 以Base64格式返回生成的heatmap
             if self.heatmap == 2:
                 with open(heatmapImg, "rb") as f:
                     heatmapImg = 'data:image/png;base64,' + base64.b64encode(f.read()).decode()
@@ -401,7 +388,7 @@ class Motion():
         accumulatedImage = None
 
         # 生成heatmap
-        if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
+        if self.heatmap in self.heatmapTags:
             # 获取背景剪裁器
             backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
 
@@ -418,12 +405,12 @@ class Motion():
 
         # 发生motion的图片
         motionFiles = []
-		
+
 		# 图片的总数
         imageCount = len(imageFiles)
 
         # 遍历进行处理
-        for i in range(0, len(imageFiles)):
+        for i in range(0, imageCount):
 		    # 计算进度
             progress = int(i / imageCount * 100)
             # 图片路径
@@ -440,38 +427,16 @@ class Motion():
             originalHeight = height
             originalWidth = width
 
-            # 没有指定检测区域，则默认检测整个图像区域
+            # 没有指定检测区域，则默认检测整个图像区域，否则则获取指定区域的图像
             if self.regions is not None:
                 # 裁剪图片
                 currentImage = motionutils.getROI(currentImage, self.regions)
                 height, width = currentImage.shape[0:2]
 
-            ## 生成heatmap
-            #if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
-            #    # 初始化accumulatedImage
-            #    if accumulatedImage is None:
-            #        accumulatedImage = np.zeros((height, width), np.uint8)
-
             # 检查图片的形状是否一样
-            if lastImage is not None and lastImage.shape != currentImage.shape:
+            if (lastImage is not None) and (lastImage.shape != currentImage.shape):
                 print('The image file({0}) not the same shape'.format(imageFile))
                 continue
-
-            ## 生成heatmap
-            #if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
-            #    # 初始化accumulatedImage
-            #    if accumulatedImage is None:
-            #        accumulatedImage = np.zeros((height, width), np.uint8)
-            #    # 为计算热力图做数据准备
-            #    # 移除背景
-            #    filter = backgroundSubtractor.apply(currentImage)
-            #    # 二值化
-            #    ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
-            #    # 去除图像噪声,先腐蚀再膨胀
-            #    thresh = cv2.erode(thresh,None, iterations=1)
-            #    thresh = cv2.dilate(thresh, None, iterations=2) 
-            #    # 相加
-            #    accumulatedImage = cv2.add(accumulatedImage, thresh)
 
             # 初始化第一张图像
             if lastImage is None:
@@ -484,7 +449,7 @@ class Motion():
             # 大于指定阈值
             if degree > self.degree:
 				# 生成heatmap
-                if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]):
+                if self.heatmap in self.heatmapTags:
                     # 初始化accumulatedImage
                     if accumulatedImage is None:
                         accumulatedImage = np.zeros((height, width), np.uint8)
@@ -494,11 +459,11 @@ class Motion():
                     # 二值化
                     ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                     # 去除图像噪声,先腐蚀再膨胀
-                    thresh = cv2.erode(thresh,None, iterations=1)
-                    thresh = cv2.dilate(thresh, None, iterations=2) 
+                    # thresh = cv2.erode(thresh,None, iterations=1)
+                    # thresh = cv2.dilate(thresh, None, iterations=2) 
                     # 相加
                     accumulatedImage = cv2.add(accumulatedImage, thresh)
-					
+
                 motionFiles.append(imageFile)
                 # print('Changed: ', milliseconds, ' degree: ', degree)
                 # 发送消息
@@ -517,7 +482,7 @@ class Motion():
             await asyncio.sleep(self.sleepTimes)
 
         # 生成heatmap
-        if (self.heatmap is not None) and (self.heatmap != 0) and (self.heatmap in [1, 2]) and (accumulatedImage is not None):
+        if (self.heatmap in self.heatmapTags) and (accumulatedImage is not None):
             # 计算热点图
             colorMapImg = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_HOT)
             # 转换成PNG图像，相对于其它图像，PNG图像多了一个透明通道
@@ -526,28 +491,25 @@ class Motion():
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
 
             # regions不为空，则进行重新resize
-            if self.regions is not None and pngImage.shape[0:2] != (originalWidth, originalHeight):
+            if (self.regions is not None) and (pngImage.shape[0:2] != (originalWidth, originalHeight)):
                 pngImage = cv2.resize(pngImage, (originalWidth, originalHeight))
 
             # 根据指定返回heat map的方式进行处理
             if not os.path.exists(self.heatmapDir):
                 try:
                     os.mkdir(self.heatmapDir)
-                    heatmapImg = os.path.join(self.heatmapDir, 
-                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                    heatmapImg = self.buildHeatmapFileName()
                     cv2.imwrite(heatmapImg, pngImage)
                 except BaseException:
                     try:
                         if not os.path.exists(self.defaultHeatmapDir):
                             os.mkdir(self.defaultHeatmapDir)
-                            heatmapImg = os.path.join(self.defaultHeatmapDir, 
-                                                time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                            heatmapImg = self.buildHeatmapFileName()
                             cv2.imwrite(heatmapImg, pngImage)
                     except BaseException:
                         print('Invalid heat map directory')
             else:
-                heatmapImg = os.path.join(self.heatmapDir, 
-                                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+                heatmapImg = self.buildHeatmapFileName()
                 cv2.imwrite(heatmapImg, pngImage)
 
             if self.heatmap == 2:
@@ -566,3 +528,25 @@ class Motion():
             except Exception as ex:
                 # 发生异常时
                 print('Exception:', ex.__doc__)
+
+
+    def buildHeatmapFileName(self, heatmapDir=None):
+        """
+            Build the heatmap file name according to time strategy
+
+            Parameters
+            ----------
+        """
+        fileName = None
+        # 根据传参目录生成文件名
+        if (heatmapDir is not None) and (os.path.exists(heatmapDir)):
+            fileName = os.path.join(heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        # 根据初始化时给的目录生成文件名
+        elif (self.heatmapDir is not None) and (os.path.exists(self.heatmapDir)):
+            fileName = os.path.join(self.heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        # 根据初始化时的默认路径生成文件名
+        elif (self.defaultHeatmapDir is not None) and (os.path.exists(self.defaultHeatmapDir)):
+            fileName = os.path.join(self.defaultHeatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        return fileName
+
+
