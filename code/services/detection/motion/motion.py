@@ -53,7 +53,7 @@ class Motion():
         self.degree = kwargs.get('degree', 10)
         # 对图像进行二值化处理所需要的一些阈值
         self.threshold = kwargs.get('threshold', 2)
-        self.maxValue = kwargs.get('maxValue', 2)
+        self.maxValue = kwargs.get('maxValue', 80)
         # 睡眠时间
         self.sleepTimes = kwargs.get('sleepTimes', 0.1)
         # 消息发送器
