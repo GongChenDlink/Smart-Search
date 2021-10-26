@@ -447,7 +447,7 @@ class Motion():
             degree = motionutils.calculateDegreeBasePHash(lastImage, currentImage)
 
             # 大于指定阈值
-            if degree > self.degree:
+            if degree >= self.degree:
 				# 生成heatmap
                 if self.heatmap in self.heatmapTags:
                     # 初始化accumulatedImage
