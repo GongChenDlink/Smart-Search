@@ -118,9 +118,11 @@ class Motion():
 
 
         # 视频方式
-        await self.motionDetect4Videos(videoFiles)
+        if (videoFiles is not None) and (len(videoFiles) > 0):
+            await self.motionDetect4Videos(videoFiles)
         # 图片方式
-        await self.motionDetect4Images(imageFiles)
+        if (imageFiles is not None) and (len(imageFiles) > 0):
+            await self.motionDetect4Images(imageFiles)
 
 
     async def motionDetect4Videos(self, videoFiles):
