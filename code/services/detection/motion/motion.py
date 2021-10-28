@@ -50,16 +50,16 @@ class Motion():
             -------
         """
         self.regions = kwargs.get('regions')
-        self.degree = kwargs.get('degree', 10)
+        self.degree = kwargs.get('degree', 10) if kwargs.get('degree', 10) else 10
         # 对图像进行二值化处理所需要的一些阈值
-        self.threshold = kwargs.get('threshold', 2)
-        self.maxValue = kwargs.get('maxValue', 80)
+        self.threshold = kwargs.get('threshold', 2) if kwargs.get('threshold', 2) else 2
+        self.maxValue = kwargs.get('maxValue', 80) if kwargs.get('maxValue', 80) else 80
         # 睡眠时间
-        self.sleepTimes = kwargs.get('sleepTimes', 0.1)
+        self.sleepTimes = kwargs.get('sleepTimes', 0.1) if kwargs.get('sleepTimes', 0.1) else 0.1
         # 消息发送器
         self.msger = kwargs.get('msger')
         # 是否生成heatmap并且返回的方式
-        self.heatmap = kwargs.get('heatmap', 0) or 0
+        self.heatmap = kwargs.get('heatmap', 0) if kwargs.get('heatmap', 0) else 0
         # heat map图片的存储目录
         self.defaultHeatmapDir = os.path.join(os.getcwd(), 'heatmap')
         self.heatmapDir = kwargs.get('heatmapDir', self.defaultHeatmapDir) or self.defaultHeatmapDir
@@ -315,6 +315,9 @@ class Motion():
             pngImage = cv2.cvtColor(colorMapImage, cv2.COLOR_BGR2BGRA)
             # 将255改变成0
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
+            # 调整透明度
+            pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)] = np.subtract(
+                pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)], [0, 0, 0, 55])
 
             # regions不为空，则进行重新resize
             if (self.regions is not None) and (pngImage.shape[0:2] != (width, height)):
@@ -325,18 +328,18 @@ class Motion():
                 try:
                     os.mkdir(self.heatmapDir)
                     heatmapImg = self.buildHeatmapFileName()
-                    cv2.imwrite(heatmapImg, pngImage)
+                    cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
                 except BaseException:
                     try:
                         if not os.path.exists(self.defaultHeatmapDir):
                             os.mkdir(self.defaultHeatmapDir)
                             heatmapImg = self.buildHeatmapFileName()
-                            cv2.imwrite(heatmapImg, pngImage)
+                            cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
                     except BaseException:
                         print('Invalid heat map directory')
             else:
                 heatmapImg = self.buildHeatmapFileName()
-                cv2.imwrite(heatmapImg, pngImage)
+                cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
 
             # 以Base64格式返回生成的heatmap
             if self.heatmap == 2:
@@ -491,6 +494,9 @@ class Motion():
             pngImage = cv2.cvtColor(colorMapImg, cv2.COLOR_BGR2BGRA)
             # 将255改变成0
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
+            # 调整透明度
+            pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)] = np.subtract(
+                pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)], [0, 0, 0, 55])
 
             # regions不为空，则进行重新resize
             if (self.regions is not None) and (pngImage.shape[0:2] != (originalWidth, originalHeight)):
@@ -501,18 +507,18 @@ class Motion():
                 try:
                     os.mkdir(self.heatmapDir)
                     heatmapImg = self.buildHeatmapFileName()
-                    cv2.imwrite(heatmapImg, pngImage)
+                    cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
                 except BaseException:
                     try:
                         if not os.path.exists(self.defaultHeatmapDir):
                             os.mkdir(self.defaultHeatmapDir)
                             heatmapImg = self.buildHeatmapFileName()
-                            cv2.imwrite(heatmapImg, pngImage)
+                            cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
                     except BaseException:
                         print('Invalid heat map directory')
             else:
                 heatmapImg = self.buildHeatmapFileName()
-                cv2.imwrite(heatmapImg, pngImage)
+                cv2.imwrite(heatmapImg, pngImage, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
 
             if self.heatmap == 2:
                 with open(heatmapImg, "rb") as f:

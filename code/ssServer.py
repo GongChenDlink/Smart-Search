@@ -103,8 +103,10 @@ async def addCommand(taskBody, websocket):
         if (dic.get('type') == 0):
             print('Motion detection')
             messager = TornadoSender(taskId=taskId, msger=websocket)
-            motionDetector = motion.Motion(msger=messager, hotmap=dic.get('hotmap'), regions=dic.get('regions'),
-                                           degree=dic.get('degree'))
+            motionDetector = motion.Motion(msger=messager, heatmap=dic.get('heatmap'), regions=dic.get('regions'),
+                                           degree=dic.get('degree'), threshold=dic.get('threshold'),
+                                           maxValue=dic.get('maxValue'), sleepTimes=dic.get('sleepTimes'),
+                                           heatmapDir=dic.get('heatmapDir'), )
 
             await motionDetector.motionDetect(sources=dic.get('sources'))
         elif (dic.get('type') == 1):
