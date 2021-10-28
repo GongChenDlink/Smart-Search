@@ -258,6 +258,23 @@ class Motion():
             if lastFrame is None:
                 # 设置上一帧
                 lastFrame = copy.deepcopy(currentFrame)
+				# 生成heatmap
+                if self.heatmap in self.heatmapTags:
+                    # [高|宽|像素值]
+                    if accumulatedImage is None:
+                        roiHeight, roiWidth = currentFrame.shape[0:2]
+                        accumulatedImage = np.zeros((roiHeight, roiWidth), np.uint8)
+                    # 为计算热力图做数据准备
+                    # 移除背景
+                    filter = backgroundSubtractor.apply(currentFrame)
+                    # 二值化
+                    ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
+                    # 去除图像噪声,先腐蚀再膨胀
+					# iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
+                    # thresh = cv2.erode(thresh, None, iterations=1)
+                    # thresh = cv2.dilate(thresh, None, iterations=2)
+                    # 相加
+                    accumulatedImage = cv2.add(accumulatedImage, thresh)
                 continue
 
             # 只处理每秒内第一帧的数据
@@ -446,6 +463,20 @@ class Motion():
             # 初始化第一张图像
             if lastImage is None:
                 lastImage = copy.deepcopy(currentImage)
+                if self.heatmap in self.heatmapTags:
+                    # 初始化accumulatedImage
+                    if accumulatedImage is None:
+                        accumulatedImage = np.zeros((height, width), np.uint8)
+                    # 为计算热力图做数据准备
+                    # 移除背景
+                    filter = backgroundSubtractor.apply(currentImage)
+                    # 二值化
+                    ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
+                    # 去除图像噪声,先腐蚀再膨胀
+                    # thresh = cv2.erode(thresh,None, iterations=1)
+                    # thresh = cv2.dilate(thresh, None, iterations=2)
+                    # 相加
+                    accumulatedImage = cv2.add(accumulatedImage, thresh)
                 continue
 
             # 计算上一帧与当前帧的相似度
