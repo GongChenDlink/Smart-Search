@@ -53,7 +53,7 @@ class Motion():
         self.degree = kwargs.get('degree', 10) if kwargs.get('degree', 10) else 10
         # 对图像进行二值化处理所需要的一些阈值
         self.threshold = kwargs.get('threshold', 2) if kwargs.get('threshold', 2) else 2
-        self.maxValue = kwargs.get('maxValue', 80) if kwargs.get('maxValue', 80) else 80
+        self.maxValue = kwargs.get('maxValue', 2) if kwargs.get('maxValue', 2) else 2
         # 睡眠时间
         self.sleepTimes = kwargs.get('sleepTimes', 0.1) if kwargs.get('sleepTimes', 0.1) else 0.1
         # 消息发送器
@@ -412,7 +412,8 @@ class Motion():
         # 生成heatmap
         if self.heatmap in self.heatmapTags:
             # 获取背景剪裁器
-            backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
+            #backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
+			backgroundSubtractor = cv2.createBackgroundSubtractorKNN(detectShadows=False)
 
         # 上一张图片
         lastImage = None
@@ -430,6 +431,8 @@ class Motion():
 
 		# 图片的总数
         imageCount = len(imageFiles)
+		
+		self.maxValue = 255 / imageCount
 
         # 遍历进行处理
         for i in range(0, imageCount):
