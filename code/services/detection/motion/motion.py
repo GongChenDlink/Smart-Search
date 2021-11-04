@@ -570,22 +570,22 @@ class Motion():
                 # 发生异常时
                 print('Exception:', ex.__doc__)
 
+    def buildHeatmapFileName(self, heatmapDir=None):
+        """
+            Build the heatmap file name according to time strategy
 
-def buildHeatmapFileName(self, heatmapDir=None):
-    """
-        Build the heatmap file name according to time strategy
-
-        Parameters
-        ----------
-    """
-    fileName = None
-    # 根据传参目录生成文件名
-    if (heatmapDir is not None) and (os.path.exists(heatmapDir)):
-        fileName = os.path.join(heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-    # 根据初始化时给的目录生成文件名
-    elif (self.heatmapDir is not None) and (os.path.exists(self.heatmapDir)):
-        fileName = os.path.join(self.heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-    # 根据初始化时的默认路径生成文件名
-    elif (self.defaultHeatmapDir is not None) and (os.path.exists(self.defaultHeatmapDir)):
-        fileName = os.path.join(self.defaultHeatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-    return fileName
+            Parameters
+            ----------
+        """
+        fileName = None
+        # 根据传参目录生成文件名
+        if (heatmapDir is not None) and (os.path.exists(heatmapDir)):
+            fileName = os.path.join(heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        # 根据初始化时给的目录生成文件名
+        elif (self.heatmapDir is not None) and (os.path.exists(self.heatmapDir)):
+            fileName = os.path.join(self.heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        # 根据初始化时的默认路径生成文件名
+        elif (self.defaultHeatmapDir is not None) and (os.path.exists(self.defaultHeatmapDir)):
+            fileName = os.path.join(self.defaultHeatmapDir,
+                                    time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+        return fileName
