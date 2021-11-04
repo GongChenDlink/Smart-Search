@@ -99,7 +99,7 @@ class Motion():
             print('Invalid sources value')
             return
 
-		# 进行数据拆分，拆分为video和image
+        # 进行数据拆分，拆分为video和image
         videoFiles = []
         imageFiles = []
         for source in sources:
@@ -116,14 +116,12 @@ class Motion():
             else:
                 print('Unsupported file format {0}'.format(suffixName))
 
-
         # 视频方式
         if (videoFiles is not None) and (len(videoFiles) > 0):
             await self.motionDetect4Videos(videoFiles)
         # 图片方式
         if (imageFiles is not None) and (len(imageFiles) > 0):
             await self.motionDetect4Images(imageFiles)
-
 
     async def motionDetect4Videos(self, videoFiles):
         """
@@ -247,7 +245,7 @@ class Motion():
             if currentFrame is None:
                 continue
 
-			# 计算检测进度
+            # 计算检测进度
             progress = int(i / frameCount * 100)
 
             # 裁剪图片
@@ -258,7 +256,7 @@ class Motion():
             if lastFrame is None:
                 # 设置上一帧
                 lastFrame = copy.deepcopy(currentFrame)
-				# 生成heatmap
+                # 生成heatmap
                 if self.heatmap in self.heatmapTags:
                     # [高|宽|像素值]
                     if accumulatedImage is None:
@@ -270,7 +268,7 @@ class Motion():
                     # 二值化
                     ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                     # 去除图像噪声,先腐蚀再膨胀
-					# iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
+                    # iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
                     # thresh = cv2.erode(thresh, None, iterations=1)
                     # thresh = cv2.dilate(thresh, None, iterations=2)
                     # 相加
@@ -286,7 +284,7 @@ class Motion():
 
             # 大于指定阈值
             if degree >= self.degree:
-				# 生成heatmap
+                # 生成heatmap
                 if self.heatmap in self.heatmapTags:
                     # [高|宽|像素值]
                     if accumulatedImage is None:
@@ -298,7 +296,7 @@ class Motion():
                     # 二值化
                     ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                     # 去除图像噪声,先腐蚀再膨胀
-					# iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
+                    # iterations的值越高，模糊程度（腐蚀程度）就越高 呈正相关
                     # thresh = cv2.erode(thresh, None, iterations=1) 
                     # thresh = cv2.dilate(thresh, None, iterations=2) 
                     # 相加
@@ -412,8 +410,8 @@ class Motion():
         # 生成heatmap
         if self.heatmap in self.heatmapTags:
             # 获取背景剪裁器
-            #backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
-			backgroundSubtractor = cv2.createBackgroundSubtractorKNN(detectShadows=False)
+            # backgroundSubtractor = cv2.bgsegm.createBackgroundSubtractorMOG()
+            backgroundSubtractor = cv2.createBackgroundSubtractorKNN(detectShadows=False)
 
         # 上一张图片
         lastImage = None
@@ -429,14 +427,14 @@ class Motion():
         # 发生motion的图片
         motionFiles = []
 
-		# 图片的总数
+        # 图片的总数
         imageCount = len(imageFiles)
-		
-		self.maxValue = 255 / imageCount
+
+        self.maxValue = 255 / imageCount
 
         # 遍历进行处理
         for i in range(0, imageCount):
-		    # 计算进度
+            # 计算进度
             progress = int(i / imageCount * 100)
             # 图片路径
             imageFile = imageFiles[i]
@@ -487,7 +485,7 @@ class Motion():
 
             # 大于指定阈值
             if degree >= self.degree:
-				# 生成heatmap
+                # 生成heatmap
                 if self.heatmap in self.heatmapTags:
                     # 初始化accumulatedImage
                     if accumulatedImage is None:
@@ -499,7 +497,7 @@ class Motion():
                     ret, thresh = cv2.threshold(filter, self.threshold, self.maxValue, cv2.THRESH_BINARY)
                     # 去除图像噪声,先腐蚀再膨胀
                     # thresh = cv2.erode(thresh,None, iterations=1)
-                    # thresh = cv2.dilate(thresh, None, iterations=2) 
+                    # thresh = cv2.dilate(thresh, None, iterations=2)
                     # 相加
                     accumulatedImage = cv2.add(accumulatedImage, thresh)
 
@@ -565,30 +563,29 @@ class Motion():
         # 结束消息
         if self.msger is not None:
             try:
-                self.msger.send({'source': None, 'index': None, 'degree': None, 'heatmapImg': heatmapImg, 'progress': 100,
-                                 'status': 'finish'})
+                self.msger.send(
+                    {'source': None, 'index': None, 'degree': None, 'heatmapImg': heatmapImg, 'progress': 100,
+                     'status': 'finish'})
             except Exception as ex:
                 # 发生异常时
                 print('Exception:', ex.__doc__)
 
 
-    def buildHeatmapFileName(self, heatmapDir=None):
-        """
-            Build the heatmap file name according to time strategy
+def buildHeatmapFileName(self, heatmapDir=None):
+    """
+        Build the heatmap file name according to time strategy
 
-            Parameters
-            ----------
-        """
-        fileName = None
-        # 根据传参目录生成文件名
-        if (heatmapDir is not None) and (os.path.exists(heatmapDir)):
-            fileName = os.path.join(heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-        # 根据初始化时给的目录生成文件名
-        elif (self.heatmapDir is not None) and (os.path.exists(self.heatmapDir)):
-            fileName = os.path.join(self.heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-        # 根据初始化时的默认路径生成文件名
-        elif (self.defaultHeatmapDir is not None) and (os.path.exists(self.defaultHeatmapDir)):
-            fileName = os.path.join(self.defaultHeatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
-        return fileName
-
-
+        Parameters
+        ----------
+    """
+    fileName = None
+    # 根据传参目录生成文件名
+    if (heatmapDir is not None) and (os.path.exists(heatmapDir)):
+        fileName = os.path.join(heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+    # 根据初始化时给的目录生成文件名
+    elif (self.heatmapDir is not None) and (os.path.exists(self.heatmapDir)):
+        fileName = os.path.join(self.heatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+    # 根据初始化时的默认路径生成文件名
+    elif (self.defaultHeatmapDir is not None) and (os.path.exists(self.defaultHeatmapDir)):
+        fileName = os.path.join(self.defaultHeatmapDir, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + '.png')
+    return fileName
