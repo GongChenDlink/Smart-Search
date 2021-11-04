@@ -523,7 +523,7 @@ class Motion():
         # 生成heatmap
         if (self.heatmap in self.heatmapTags) and (accumulatedImage is not None):
             # 计算热点图
-            colorMapImg = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_HOT)
+            colorMapImg = cv2.applyColorMap(accumulatedImage, cv2.COLORMAP_JET)
             # 转换成PNG图像，相对于其它图像，PNG图像多了一个透明通道
             pngImage = cv2.cvtColor(colorMapImg, cv2.COLOR_BGR2BGRA)
             # 将255改变成0
