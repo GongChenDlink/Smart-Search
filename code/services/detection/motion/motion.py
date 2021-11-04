@@ -529,8 +529,7 @@ class Motion():
             pngImage[np.all(pngImage == [0, 0, 0, 255], axis=2)] = [0, 0, 0, 0]
             # 调整透明度
             pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)] = np.subtract(
-                pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)], [0, 0, 0, 55])
-
+                pngImage[np.any(pngImage != [0, 0, 0, 0], axis=2)], [0, 0, 0, 200])
             # regions不为空，则进行重新resize
             if (self.regions is not None) and (pngImage.shape[0:2] != (originalWidth, originalHeight)):
                 pngImage = cv2.resize(pngImage, (originalWidth, originalHeight))
