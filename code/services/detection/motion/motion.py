@@ -50,16 +50,17 @@ class Motion():
             -------
         """
         self.regions = kwargs.get('regions')
-        self.degree = kwargs.get('degree', 10) if kwargs.get('degree', 10) else 10
+        self.degree = kwargs.get('degree', 10) if kwargs.get('degree', 10) is not None else 10
         # 对图像进行二值化处理所需要的一些阈值
-        self.threshold = kwargs.get('threshold', 2) if kwargs.get('threshold', 2) else 2
-        self.maxValue = kwargs.get('maxValue', 2) if kwargs.get('maxValue', 2) else 2
+        self.threshold = kwargs.get('threshold', 2) if kwargs.get('threshold', 2) is not None else 2
+        self.maxValue = kwargs.get('maxValue', 2) if kwargs.get('maxValue', 2) is not None else 2
         # 睡眠时间
-        self.sleepTimes = kwargs.get('sleepTimes', 0.1) if kwargs.get('sleepTimes', 0.1) else 0.1
+        self.sleepTimes = kwargs.get('sleepTimes', 0.1) if kwargs.get('sleepTimes', 0.1) is not None and kwargs.get(
+            'sleepTimes', 0.1) != 0 else 0.1
         # 消息发送器
         self.msger = kwargs.get('msger')
         # 是否生成heatmap并且返回的方式
-        self.heatmap = kwargs.get('heatmap', 0) if kwargs.get('heatmap', 0) else 0
+        self.heatmap = kwargs.get('heatmap', 0) if kwargs.get('heatmap', 0) is not None else 0
         # heat map图片的存储目录
         self.defaultHeatmapDir = os.path.join(os.getcwd(), 'heatmap')
         self.heatmapDir = kwargs.get('heatmapDir', self.defaultHeatmapDir) or self.defaultHeatmapDir
